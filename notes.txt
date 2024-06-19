@@ -1,0 +1,32 @@
+
+    let mut decoded_message = String::new();
+
+    
+
+    let out_image = image::open("message_copy.png").expect("couldn't open image to decode").to_rgba8();
+
+    let (width, height) = out_image.dimensions();
+    let bytes = width * height;
+
+    let mut all_alpha_vals: Vec<u8> = Vec::new();
+    
+    for (x, y, pixel) in out_image.enumerate_pixels() {
+        
+        let input_index = x + (y * width); // counts left to right and from top to down to calculate the total pixels encompassed which corresponds to the number of alpha channels that can be lsb written to
+        
+        if pixel.0[3] != null_byte[0] {
+            //println!("found none {}", pixel.0[3]); // /home/phantom/ntsh/rust/identifies_png.png
+            all_alpha_vals.push(pixel.0[3])
+        }
+        else {
+            println!("found!!!!");
+        }
+    }
+
+    let unique_vec = unique_elements(all_alpha_vals);
+
+    for i in unique_vec {
+        println!("{}", i)
+    }
+
+    println!("{}", decoded_message)
