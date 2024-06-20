@@ -1,0 +1,12 @@
+fn main() {
+    let mut byte: u8 = 0b1010_1010; // Example byte
+
+    // To change the LSB to 1:
+    byte |= 0b0000_0001;
+
+    // To change the LSB to 0:
+    byte &= 0b1111_1110;
+
+    println!("Modified byte: {:08b}", byte); // Print the byte in binary format with leading zeros
+}
+

@@ -12,14 +12,43 @@ fn encode_alpha(img: ImageBuffer<Rgba<u8>, Vec<u8>>, message: &[u8]) -> ImageBuf
     }
 
     let mut out = ImageBuffer::<Rgba<u8>, Vec<u8>>::new(width, height);
-    
+   
+    let mut bit_values: Vec<u8> = Vec::new();
+
+    for msg_byte in message {
+        for i in 0..8 {
+            let bit_value = (msg_byte >> i) & 1;
+            bit_values.push(bit_value);
+            println!("{}", bit_value); // this prints the bit values in little endian (starting
+            // from least significant bit)
+        }
+    }
+
+    println!("every bit: {}", bit_values.len()); // came out to 360 which is 45 chars * 8 bits per
+    // char
+
+//    we have all the bits now in an array. need to write one to each pixel by doing the // To change the LSB to 1:
+  //  byte |= 0b0000_0001;
+
+    // To change the LSB to 0:
+    //byte &= 0b1111_1110;
+
+
     for (x, y, pixel) in img.enumerate_pixels() {
         let mut tmp_pixel = *pixel;
         
         let input_index = x + (y * width); // counts left to right and from top to down to calculate the total pixels encompassed which corresponds to the number of alpha channels that can be lsb written to
         
         if input_index < message.len() as u32{
-            tmp_pixel.0[3] = message[input_index as usize]; // 4th item (start at 0)
+            tmp_pixel.0[3] = message[input_index as usize]; // 4th item (start at 0) this is
+            // writing a byte to a byte space aka the alpha channel for htis pixel is being
+            // replaced with the message. i want to replace a bit only
+            //
+            
+            //for msg_byte in msg_bytes
+            //for bit in msg_byte
+            //for byte in image
+            //write bit
         }
 
         out.put_pixel(x, y, tmp_pixel);
@@ -28,12 +57,10 @@ fn encode_alpha(img: ImageBuffer<Rgba<u8>, Vec<u8>>, message: &[u8]) -> ImageBuf
     out
 }
 
-fn unique_elements<T: Eq + std::hash::Hash + Clone>(vec: Vec<T>) -> Vec<T> {
-    let set: HashSet<_> = vec.into_iter().collect();
-    set.into_iter().collect()
-}
 
-fn decode_alpha(img: ImageBuffer<Rgba<u8>, Vec<u8>>) -> Vec<u8> {
+fn decode_alpha(img: ImageBuffer<Rgba<u8>, Vec<u8>>) -> Vec<u8> { // this needs to be edited to
+    // read the lsb of each alpha channel byte of a pixel then stick em all together to form a
+    // series of bits
     let mut out: Vec<u8> = Vec::new();
 
     for (_, _, pixel) in img.enumerate_pixels() {
