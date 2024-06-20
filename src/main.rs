@@ -1,6 +1,42 @@
-use std::{collections::HashSet, io::Read, u8, usize};
-use image::{save_buffer, DynamicImage, GenericImageView, ImageBuffer, Rgba, ColorType::Rgba8};
+use std::{ io::Read, u8, usize };
+use image::{save_buffer, GenericImageView, ImageBuffer, Rgba, ColorType::Rgba8};
 
+fn encode_storage_alpha(message_len: u32, _img: ImageBuffer<Rgba<u8>, Vec<u8>>, width: u32, height: u32) {
+
+    let _startx = width - 33; this changes
+    let _starty = height -33; this doesn't. write contiguously on the same y value
+
+    let mut size_vec: Vec<u8> = Vec::new();
+
+
+    for i in 0..32 {
+        let bit_value = (message_len >> i) & 1;
+        size_vec.push(bit_value.try_into().expect("unable to convert storage bit as u8 from u32"));
+        println!("storage: {}", bit_value); // this prints the bit values in little endian (starting
+        // from least significant bit)
+    } // prints every bit to add 
+
+
+    for bit in size_vec {
+        get pixel at start x and y | write bit to alpha channel | increment pixel x +=1
+    }
+    if input_index < size_vec.len() as u32{
+
+            if bit_values[input_index_as_usize] == 1 {
+                tmp_pixel.0[3] |= 0b0000_0001;
+            }
+            if bit_values[input_index_as_usize] == 0 {
+                tmp_pixel.0[3] &= 0b1111_1110;
+            }
+
+            println!("ran input_index =>  {}", input_index);
+
+        }
+
+
+
+    //img.get_pixel();
+}
 
 fn encode_alpha(img: ImageBuffer<Rgba<u8>, Vec<u8>>, message: &[u8]) -> ImageBuffer<Rgba<u8>, Vec<u8>> {
 
@@ -32,8 +68,10 @@ fn encode_alpha(img: ImageBuffer<Rgba<u8>, Vec<u8>>, message: &[u8]) -> ImageBuf
 
     // To change the LSB to 0:
     //byte &= 0b1111_1110;
-
-YOUCAN TELL IT HOW MANNY BITS TO READ IF YOU STORE THE MESSAGE LENGTH IN ONE OF THE PIXELS (uSE THE VERY LAST 32 PIXELS TO STORE A 4 BYTE INT TO STATE HOW MUCH MESSAGE CAN BE IN IT)
+//
+//
+//  
+    encode_storage_alpha(message.len().try_into().expect("couldn't convert msg len to u32"), img.clone(), width, height);
     
 
     for (x, y, pixel) in img.enumerate_pixels() {
