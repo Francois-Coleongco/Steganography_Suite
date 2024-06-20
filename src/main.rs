@@ -1,4 +1,4 @@
-use std::{collections::HashSet, io::Read, u8};
+use std::{collections::HashSet, io::Read, u8, usize};
 use image::{save_buffer, DynamicImage, GenericImageView, ImageBuffer, Rgba, ColorType::Rgba8};
 
 
@@ -34,13 +34,29 @@ fn encode_alpha(img: ImageBuffer<Rgba<u8>, Vec<u8>>, message: &[u8]) -> ImageBuf
     //byte &= 0b1111_1110;
 
 
+    
+
     for (x, y, pixel) in img.enumerate_pixels() {
+
         let mut tmp_pixel = *pixel;
         
         let input_index = x + (y * width); // counts left to right and from top to down to calculate the total pixels encompassed which corresponds to the number of alpha channels that can be lsb written to
-        
-        if input_index < message.len() as u32{
-            tmp_pixel.0[3] = message[input_index as usize]; // 4th item (start at 0) this is
+       
+        let input_index_as_usize: usize = input_index.try_into().expect("unable to calculate input_index_as_usize");
+
+        if input_index < bit_values.len() as u32{
+
+            if bit_values[input_index_as_usize] == 1 {
+                tmp_pixel.0[3] |= 0b0000_0001;
+            }
+            if bit_values[input_index_as_usize] == 0 {
+                tmp_pixel.0[3] &= 0b1111_1110;
+            }
+
+            println!("ran input_index =>  {}", input_index);
+
+        }
+            // 4th item (start at 0) this is
             // writing a byte to a byte space aka the alpha channel for htis pixel is being
             // replaced with the message. i want to replace a bit only
             //
@@ -49,10 +65,10 @@ fn encode_alpha(img: ImageBuffer<Rgba<u8>, Vec<u8>>, message: &[u8]) -> ImageBuf
             //for bit in msg_byte
             //for byte in image
             //write bit
-        }
 
         out.put_pixel(x, y, tmp_pixel);
     }
+
 
     out
 }
@@ -64,22 +80,50 @@ fn decode_alpha(img: ImageBuffer<Rgba<u8>, Vec<u8>>) -> Vec<u8> { // this needs 
     let mut out: Vec<u8> = Vec::new();
 
     for (_, _, pixel) in img.enumerate_pixels() {
-        out.push(pixel.0[3]);
-    }
+            let bit_value = (pixel.0[3]) & 1; // gets lsb
+            out.push(bit_value);
+        }
 
-    out
+    // out is an array of 0's and 1's. i need to convert this array back to bytes
+    //
+    //
+    let mut final_bytes: Vec<u8> = Vec::new();
+
+    let mut current_byte: u8 = 0;
+
+    let mut bit_count = 0;
+
+    for bit in out {
+        current_byte = bit | (current_byte << 1);
+        bit_count += 1;
+        if bit_count == 8 {
+            final_bytes.push(current_byte.reverse_bits());
+            current_byte = 0;
+            bit_count = 0;
+        }
+    }
+   //  EVERY BYTE MUST BE FLIPPED SO IT GIVES A RIGHT NUMBER FOR ASCII
+
+
+    final_bytes
+
 }
+
 
 fn decoder(message_copy: ImageBuffer<Rgba<u8>, Vec<u8>>) {
     let data = decode_alpha(message_copy);
 
     let clean_buffer: Vec<u8> = data.into_iter()
                                     .filter(|b| {
-                                        *b != 0xff_u8
+                                        *b != 0xff_u8 // filter out 255 aka full alpha
                                     })
                                     .collect();
 
     let mut a = clean_buffer.as_slice();
+
+    for i in a {
+        println!(" --> {}", i)
+    }
 
     let mut newbuff = String::new();
 
@@ -88,6 +132,8 @@ fn decoder(message_copy: ImageBuffer<Rgba<u8>, Vec<u8>>) {
     println!("decoded: {}", newbuff);
 
 }
+
+
 
 fn encoder(img: ImageBuffer<Rgba<u8>, Vec<u8>>, width: u32, height: u32) {
 

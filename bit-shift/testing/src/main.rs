@@ -1,6 +1,9 @@
 fn main() {
-    let byte: u8 = 0b1010_1010; // Example byte
+    let byte: u8 = 0b1111_0100; // Example byte
 
+    println!("byte:   {}", byte);
+    println!("!byte   {}", !byte);
+    
     // Iterate over each bit position from 0 to 7 (since u8 has 8 bits)
     for i in 0..8 {
         // Check if the i-th bit is set (1) or not (0)
