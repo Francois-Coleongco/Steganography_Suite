@@ -33,7 +33,7 @@ fn encode_alpha(img: ImageBuffer<Rgba<u8>, Vec<u8>>, message: &[u8]) -> ImageBuf
     // To change the LSB to 0:
     //byte &= 0b1111_1110;
 
-
+YOUCAN TELL IT HOW MANNY BITS TO READ IF YOU STORE THE MESSAGE LENGTH IN ONE OF THE PIXELS (uSE THE VERY LAST 32 PIXELS TO STORE A 4 BYTE INT TO STATE HOW MUCH MESSAGE CAN BE IN IT)
     
 
     for (x, y, pixel) in img.enumerate_pixels() {
@@ -84,6 +84,7 @@ fn decode_alpha(img: ImageBuffer<Rgba<u8>, Vec<u8>>) -> Vec<u8> { // this needs 
             out.push(bit_value);
         }
 
+    println!("out len: {}", out.len());
     // out is an array of 0's and 1's. i need to convert this array back to bytes
     //
     //
@@ -113,13 +114,9 @@ fn decode_alpha(img: ImageBuffer<Rgba<u8>, Vec<u8>>) -> Vec<u8> { // this needs 
 fn decoder(message_copy: ImageBuffer<Rgba<u8>, Vec<u8>>) {
     let data = decode_alpha(message_copy);
 
-    let clean_buffer: Vec<u8> = data.into_iter()
-                                    .filter(|b| {
-                                        *b != 0xff_u8 // filter out 255 aka full alpha
-                                    })
-                                    .collect();
+    // 
 
-    let mut a = clean_buffer.as_slice();
+    let mut a = &data[0..44];
 
     for i in a {
         println!(" --> {}", i)
