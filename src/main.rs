@@ -113,7 +113,7 @@ fn encode_alpha(img: ImageBuffer<Rgba<u8>, Vec<u8>>, message: &[u8]) -> ImageBuf
 }
 
 
-fn decode_alpha(img: ImageBuffer<Rgba<u8>, Vec<u8>>) -> Vec<u8> { // this needs to be edited to
+fn decode_alpha(img: ImageBuffer<Rgba<u8>, Vec<u8>>) -> (Vec<u8>, u32) { // this needs to be edited to
     // read the lsb of each alpha channel byte of a pixel then stick em all together to form a
     // series of bits
     let mut out: Vec<u8> = Vec::new();
@@ -135,19 +135,18 @@ fn decode_alpha(img: ImageBuffer<Rgba<u8>, Vec<u8>>) -> Vec<u8> { // this needs 
     // out is an array of 0's and 1's. i need to convert this array back to bytes
     //
     //
-    let mut message_bytes: Vec<u8> = Vec::new();
 
-    let mut current_4bytes = 0;
+    let mut current_4bytes: u32 = 0;
 
     let mut bit_count = 0;
 
     for bit in &out[(out.len() - 32)..] {
+        let bit: u32 = *bit as u32;
         current_4bytes = bit | (current_4bytes << 1);
         println!("bit found wewewewe: {}", bit);
         println!("current_byte: {}", current_4bytes);
         bit_count += 1;
         if bit_count == 32 {
-            message_bytes.push(current_4bytes.reverse_bits());
             bit_count = 0;
             println!("became 32");
         }
@@ -155,28 +154,48 @@ fn decode_alpha(img: ImageBuffer<Rgba<u8>, Vec<u8>>) -> Vec<u8> { // this needs 
    //  EVERY BYTE MUST BE FLIPPED SO IT GIVES A RIGHT NUMBER FOR ASCII
     println!("final current_4bytes: {}", current_4bytes);
 
-    println!("message_bytes, {}", message_bytes[0]);
 
-    out
+    let mut final_bytes: Vec<u8> = Vec::new();
+
+    let mut current_byte: u8 = 0;
+
+    let mut bit_count = 0;
+
+    for bit in &out {
+        current_byte = bit | (current_byte << 1);
+        bit_count += 1;
+        if bit_count == 8 {
+            final_bytes.push(current_byte.reverse_bits());
+            current_byte = 0;
+            bit_count = 0;
+        }
+    }
+
+    (final_bytes, current_4bytes)
 
 }
 
 
 
 fn decoder(message_copy: ImageBuffer<Rgba<u8>, Vec<u8>>) {
-    let data = decode_alpha(message_copy);
+    let (data, length) = decode_alpha(message_copy);
 
-    // 
+    //
+    //
 
-    let mut a = &data[0..44];
+    let mut index = 0;
 
-    for i in a {
-        println!(" --> {}", i)
+    let mut final_message_vec = &data[..length as usize];
+
+    for i in final_message_vec {
+        println!("i: {}", i)
     }
 
     let mut newbuff = String::new();
+    
+    final_message_vec.read_to_string(&mut newbuff).expect("couldn't read final_message_vec into newbuff");
 
-    println!("bytes found: {}", a.read_to_string(&mut newbuff).expect("oh no")); // it did get in. this is whats being pritned. it says the number of bytes aka the number of chars in the message written
+    println!("bytes found: {}", length); // it did get in. this is whats being pritned. it says the number of bytes aka the number of chars in the message written
     
     println!("decoded: {}", newbuff);
 
