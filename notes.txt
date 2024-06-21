@@ -29,4 +29,13 @@
         println!("{}", i)
     }
 
-    println!("{}", decoded_message)
+    println!("{}", decoded_message
+
+
+
+
+    )
+
+
+
+    NOTE YOU NEED TO MAKE CVHECKS SO THE THING DOESNT OVERWRITE THE MNESSAGE LENGTH STORAGE

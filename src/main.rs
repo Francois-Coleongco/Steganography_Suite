@@ -1,42 +1,5 @@
-use std::{ io::Read, u8, usize };
+use std::io::Read;
 use image::{save_buffer, GenericImageView, ImageBuffer, Rgba, ColorType::Rgba8};
-
-fn encode_storage_alpha(message_len: u32, _img: ImageBuffer<Rgba<u8>, Vec<u8>>, width: u32, height: u32) {
-
-    let _startx = width - 33; this changes
-    let _starty = height -33; this doesn't. write contiguously on the same y value
-
-    let mut size_vec: Vec<u8> = Vec::new();
-
-
-    for i in 0..32 {
-        let bit_value = (message_len >> i) & 1;
-        size_vec.push(bit_value.try_into().expect("unable to convert storage bit as u8 from u32"));
-        println!("storage: {}", bit_value); // this prints the bit values in little endian (starting
-        // from least significant bit)
-    } // prints every bit to add 
-
-
-    for bit in size_vec {
-        get pixel at start x and y | write bit to alpha channel | increment pixel x +=1
-    }
-    if input_index < size_vec.len() as u32{
-
-            if bit_values[input_index_as_usize] == 1 {
-                tmp_pixel.0[3] |= 0b0000_0001;
-            }
-            if bit_values[input_index_as_usize] == 0 {
-                tmp_pixel.0[3] &= 0b1111_1110;
-            }
-
-            println!("ran input_index =>  {}", input_index);
-
-        }
-
-
-
-    //img.get_pixel();
-}
 
 fn encode_alpha(img: ImageBuffer<Rgba<u8>, Vec<u8>>, message: &[u8]) -> ImageBuffer<Rgba<u8>, Vec<u8>> {
 
@@ -71,8 +34,8 @@ fn encode_alpha(img: ImageBuffer<Rgba<u8>, Vec<u8>>, message: &[u8]) -> ImageBuf
 //
 //
 //  
-    encode_storage_alpha(message.len().try_into().expect("couldn't convert msg len to u32"), img.clone(), width, height);
-    
+    // let encode_storage_alpha(message.len().try_into().expect("couldn't convert msg len to u32"), img.clone(), width, height);
+    // returns 
 
     for (x, y, pixel) in img.enumerate_pixels() {
 
@@ -87,8 +50,11 @@ fn encode_alpha(img: ImageBuffer<Rgba<u8>, Vec<u8>>, message: &[u8]) -> ImageBuf
             if bit_values[input_index_as_usize] == 1 {
                 tmp_pixel.0[3] |= 0b0000_0001;
             }
-            if bit_values[input_index_as_usize] == 0 {
+            else if bit_values[input_index_as_usize] == 0 {
                 tmp_pixel.0[3] &= 0b1111_1110;
+            }
+            else {
+                println!("wtf just happened");
             }
 
             println!("ran input_index =>  {}", input_index);
@@ -108,6 +74,41 @@ fn encode_alpha(img: ImageBuffer<Rgba<u8>, Vec<u8>>, message: &[u8]) -> ImageBuf
     }
 
 
+    let mut x2 = width - 33; // this changes
+    let y2 = height - 1; // this doesn't. write contiguously on the same y value
+
+    let mut size_vec: Vec<u8> = Vec::new();
+
+
+    for i in (0..32).rev() {
+        let bit_value = (message.len() >> i) & 1;
+        size_vec.push(bit_value.try_into().expect("unable to convert storage bit as u8 from u32"));
+        println!("storage: {}", bit_value); // this prints the bit values in little endian (starting
+        // from least significant bit)
+    } // prints every bit to add 
+
+
+    let mut current_pixel = *(img.get_pixel(x2,y2));
+    
+    for bit in size_vec {
+        // get pixel at start x and y | write bit to alpha channel | increment pixel x +=1
+
+        if bit == 1 {
+            current_pixel.0[3] |= 0b0000_0001;
+        }
+        else if bit == 0 {
+            current_pixel.0[3] &= 0b1111_1110;
+        }
+        else {
+            println!("wtf just happenedd 2");
+        }
+
+        x2 += 1;
+
+        out.put_pixel(x2, y2, current_pixel);
+
+    };
+
     out
 }
 
@@ -117,7 +118,15 @@ fn decode_alpha(img: ImageBuffer<Rgba<u8>, Vec<u8>>) -> Vec<u8> { // this needs 
     // series of bits
     let mut out: Vec<u8> = Vec::new();
 
-    for (_, _, pixel) in img.enumerate_pixels() {
+
+    // read message length first
+    //
+    //
+
+
+    
+    for (x, y, pixel) in img.enumerate_pixels() { // need this to read only pixels up to a certain
+        // limit
             let bit_value = (pixel.0[3]) & 1; // gets lsb
             out.push(bit_value);
         }
@@ -126,27 +135,32 @@ fn decode_alpha(img: ImageBuffer<Rgba<u8>, Vec<u8>>) -> Vec<u8> { // this needs 
     // out is an array of 0's and 1's. i need to convert this array back to bytes
     //
     //
-    let mut final_bytes: Vec<u8> = Vec::new();
+    let mut message_bytes: Vec<u8> = Vec::new();
 
-    let mut current_byte: u8 = 0;
+    let mut current_4bytes = 0;
 
     let mut bit_count = 0;
 
-    for bit in out {
-        current_byte = bit | (current_byte << 1);
+    for bit in &out[(out.len() - 32)..] {
+        current_4bytes = bit | (current_4bytes << 1);
+        println!("bit found wewewewe: {}", bit);
+        println!("current_byte: {}", current_4bytes);
         bit_count += 1;
-        if bit_count == 8 {
-            final_bytes.push(current_byte.reverse_bits());
-            current_byte = 0;
+        if bit_count == 32 {
+            message_bytes.push(current_4bytes.reverse_bits());
             bit_count = 0;
+            println!("became 32");
         }
     }
    //  EVERY BYTE MUST BE FLIPPED SO IT GIVES A RIGHT NUMBER FOR ASCII
+    println!("final current_4bytes: {}", current_4bytes);
 
+    println!("message_bytes, {}", message_bytes[0]);
 
-    final_bytes
+    out
 
 }
+
 
 
 fn decoder(message_copy: ImageBuffer<Rgba<u8>, Vec<u8>>) {
@@ -174,7 +188,7 @@ fn encoder(img: ImageBuffer<Rgba<u8>, Vec<u8>>, width: u32, height: u32) {
 
     save_buffer("direct_copy.png", &img, width, height, Rgba8).expect("failed to direct-copy");
 
-    let message = "this is an encoded message whuwheuauhaaahhaha".as_bytes();
+    let message = "aaaaaaaaaaaaaaaaaaaaaaaaaa".as_bytes();
 
     if message.len() > (width * height).try_into().expect("couldn't convert to usize") {
         println!("too small image to embed with alpha channel encoding");
@@ -184,6 +198,8 @@ fn encoder(img: ImageBuffer<Rgba<u8>, Vec<u8>>, width: u32, height: u32) {
 
     save_buffer("message_copy.png", &new_image_buffer, width, height, Rgba8).expect("failed to message-copy");
 }
+
+
 
 fn main() {
 
