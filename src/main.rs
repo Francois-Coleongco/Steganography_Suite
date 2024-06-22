@@ -113,34 +113,29 @@ fn encode_alpha(img: ImageBuffer<Rgba<u8>, Vec<u8>>, message: &[u8]) -> ImageBuf
 }
 
 
-fn decode_alpha(img: ImageBuffer<Rgba<u8>, Vec<u8>>) -> (Vec<u8>, u32) { // this needs to be edited to
+fn decoder_alpha(img: ImageBuffer<Rgba<u8>, Vec<u8>>) -> (Vec<u8>, u32) { // this needs to be edited to
     // read the lsb of each alpha channel byte of a pixel then stick em all together to form a
     // series of bits
     let mut out: Vec<u8> = Vec::new();
 
-
     // read message length first
-    //
-    //
-
-
     
-    for (x, y, pixel) in img.enumerate_pixels() { // need this to read only pixels up to a certain
+    for (_x, _y, pixel) in img.enumerate_pixels() { // need this to read only pixels up to a certain
         // limit
             let bit_value = (pixel.0[3]) & 1; // gets lsb
             out.push(bit_value);
         }
 
-    println!("out len: {}", out.len());
+    let out_len = out.len();
+
+    println!("out len: {}", out_len);
     // out is an array of 0's and 1's. i need to convert this array back to bytes
-    //
-    //
 
     let mut current_4bytes: u32 = 0;
 
     let mut bit_count = 0;
 
-    for bit in &out[(out.len() - 32)..] {
+    for bit in &out[(out_len - 32)..] {
         let bit: u32 = *bit as u32;
         current_4bytes = bit | (current_4bytes << 1);
         println!("bit found wewewewe: {}", bit);
@@ -153,7 +148,6 @@ fn decode_alpha(img: ImageBuffer<Rgba<u8>, Vec<u8>>) -> (Vec<u8>, u32) { // this
     }
    //  EVERY BYTE MUST BE FLIPPED SO IT GIVES A RIGHT NUMBER FOR ASCII
     println!("final current_4bytes: {}", current_4bytes);
-
 
     let mut final_bytes: Vec<u8> = Vec::new();
 
@@ -177,14 +171,25 @@ fn decode_alpha(img: ImageBuffer<Rgba<u8>, Vec<u8>>) -> (Vec<u8>, u32) { // this
 
 
 
+fn encoder(img: ImageBuffer<Rgba<u8>, Vec<u8>>, width: u32, height: u32) {
+
+    save_buffer("direct_copy.png", &img, width, height, Rgba8).expect("failed to direct-copy");
+
+    let message = "WHAT THE FUCK IS HAPPENINGK:WRNJGHWRIOHGERSGIOJERSIOGJERSGIOJERWIOGJIOERWJGIOJEIORGJYIJRWIOgjioerjgioerfjsdgiojfdikbgnioksdfjgopirswdgiojerwio woooooooooooooooooooooooooOOOOOOOOOOOOOOOOOOoooooooooOOOOOOoooOOOOOoooOOOOooOOOOoooOOOOOooOOOOooOOOoooOOOoooOOOOoooOOOOOOOO34582937419859347689270394250893475aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa".as_bytes();
+
+    if message.len() > (width * height).try_into().expect("couldn't convert to usize") {
+        println!("too small image to embed with alpha channel encoding");
+    }
+
+    let new_image_buffer = encode_alpha(img, message);
+
+    save_buffer("message_copy.png", &new_image_buffer, width, height, Rgba8).expect("failed to message-copy");
+}
+
+
+
 fn decoder(message_copy: ImageBuffer<Rgba<u8>, Vec<u8>>) {
-    let (data, length) = decode_alpha(message_copy);
-
-    //
-    //
-
-    let mut index = 0;
-
+    let (data, length) = decoder_alpha(message_copy);
     let mut final_message_vec = &data[..length as usize];
 
     for i in final_message_vec {
@@ -195,27 +200,10 @@ fn decoder(message_copy: ImageBuffer<Rgba<u8>, Vec<u8>>) {
     
     final_message_vec.read_to_string(&mut newbuff).expect("couldn't read final_message_vec into newbuff");
 
-    println!("bytes found: {}", length); // it did get in. this is whats being pritned. it says the number of bytes aka the number of chars in the message written
+    println!("bytes found: {}\n\n\n", length); // it did get in. this is whats being pritned. it says the number of bytes aka the number of chars in the message written
     
-    println!("decoded: {}", newbuff);
+    println!("decoded: \n\n{}", newbuff);
 
-}
-
-
-
-fn encoder(img: ImageBuffer<Rgba<u8>, Vec<u8>>, width: u32, height: u32) {
-
-    save_buffer("direct_copy.png", &img, width, height, Rgba8).expect("failed to direct-copy");
-
-    let message = "aaaaaaaaaaaaaaaaaaaaaaaaaa".as_bytes();
-
-    if message.len() > (width * height).try_into().expect("couldn't convert to usize") {
-        println!("too small image to embed with alpha channel encoding");
-    }
-
-    let new_image_buffer = encode_alpha(img, message);
-
-    save_buffer("message_copy.png", &new_image_buffer, width, height, Rgba8).expect("failed to message-copy");
 }
 
 
