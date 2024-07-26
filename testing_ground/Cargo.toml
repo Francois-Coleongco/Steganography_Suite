@@ -1,0 +1,13 @@
+[package]
+name = "testing_ground"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+aes = "0.7"             # For AES encryption
+rand = "0.8"            # For generating random IVs and salts
+pbkdf2 = { version = "0.12", features = ["simple"] }
+rand_core = { version = "0.6", features = ["std"] }
+hmac = "0.12"           # HMAC for PBKDF2
+sha2 = "0.10"           # SHA-256 hash function
+hex = "0.4"             # For encoding/decoding
