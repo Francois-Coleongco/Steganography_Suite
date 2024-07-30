@@ -37,7 +37,7 @@ fn authenticate() -> String {
 
 
 
-fn add_entry(data_name: String, data: String, password: String) {
+fn add_entry(data_name: &str, data: String, password: &str) {
 
     println!("data: {}", data);
 
@@ -84,7 +84,7 @@ fn add_entry_handler() {
 
     println!("\n ---- o ---- o ---- o ---- \n adding entry");
 
-    add_entry(data_name, data, master_password);
+    add_entry(data_name.trim(), data, master_password.trim());
 
 }
 
