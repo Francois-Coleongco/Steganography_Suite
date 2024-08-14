@@ -1,7 +1,7 @@
 use pbkdf2::pbkdf2_hmac;
 use sha2::Sha256;
 use rand::RngCore;
-use std::fs::File;
+use std::fs::OpenOptions;
 use std::io::Write;
 
 fn derive_key(password: &[u8], salt: &[u8]) -> [u8; 32] {
@@ -18,7 +18,7 @@ fn generate_salt() -> [u8; 16] {
 }
 
 
-fn authenticate() -> String {
+fn authenticate_derive() -> ([u8; 32], [u8; 16]) {
 
     let mut master_password = String::new();
     
@@ -29,9 +29,12 @@ fn authenticate() -> String {
     std::io::stdin().read_line(&mut master_password).expect("couldn't read input");
 
     println!("{}", master_password);
+    
+    let salt = generate_salt();
 
-    return master_password;
+    let key = derive_key(master_password.trim().as_bytes(), &salt);
 
+    return (key, salt)
 
 }
 
@@ -39,23 +42,34 @@ fn authenticate() -> String {
 
 fn add_entry(data_name: &str, data: String, password: &str) {
 
+
+    let (key, salt) = authenticate_derive();
+
     println!("data: {}", data);
-
-    let salt = &generate_salt();
-
-    let key = derive_key(password.trim().as_bytes(), salt);
-
+   
     println!("salt: {:?}", salt);
 
     println!("{:?}", key);
 
   //  save the salt as the second line after the password
 
-    let mut file = File::create(data_name).expect("couldn't create file");
+
+    let mut file = OpenOptions::new()
+        .create(true)
+        .write(true)
+        .append(true)
+        .open(data_name)
+    .expect("couldn't create file data_name");
+
   //  the salt will be unique. one for each password to be stored encrypted
 
     file.write_all(salt).expect("Unable to write data");
 
+    // ENCRYPT IT FIRST BEFORE YOU WRITE TO FILE VVV
+
+    
+
+    file.write_all(data.as_bytes()).expect("Unable to write data");
   //  encrypt with 256 aes (key derived is 32 bytes aka 32 bytes = 8 bits/byte * 32 bytes = 256 bits)
 
 

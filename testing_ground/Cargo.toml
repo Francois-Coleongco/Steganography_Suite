@@ -11,3 +11,4 @@ rand_core = { version = "0.6", features = ["std"] }
 hmac = "0.12"           # HMAC for PBKDF2
 sha2 = "0.10"           # SHA-256 hash function
 hex = "0.4"             # For encoding/decoding
+bcrypt = "0.15.1"
