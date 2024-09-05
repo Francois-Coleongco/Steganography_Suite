@@ -40,8 +40,7 @@ fn authenticate_derive() -> ([u8; 32], [u8; 16]) {
 
 
 
-fn add_entry(data_name: &str, data: String, password: &str) {
-
+fn add_entry(data_name: &str, data: String) {
 
     let (key, salt) = authenticate_derive();
 
@@ -63,7 +62,7 @@ fn add_entry(data_name: &str, data: String, password: &str) {
 
   //  the salt will be unique. one for each password to be stored encrypted
 
-    file.write_all(salt).expect("Unable to write data");
+    file.write_all(&salt).expect("Unable to write data");
 
     // ENCRYPT IT FIRST BEFORE YOU WRITE TO FILE VVV
 
@@ -78,8 +77,6 @@ fn add_entry(data_name: &str, data: String, password: &str) {
 
 fn add_entry_handler() {
     
-    let master_password = authenticate();
-
     let mut data_name = String::new();
 
     let mut data = String::new();
@@ -95,10 +92,8 @@ fn add_entry_handler() {
     std::io::stdout().flush().expect("couldn't flush 2");
     
     std::io::stdin().read_line(&mut data).expect("couldn't read input for entry data");
-
-    println!("\n ---- o ---- o ---- o ---- \n adding entry");
-
-    add_entry(data_name.trim(), data, master_password.trim());
+    
+    add_entry(&data_name, data)
 
 }
 
