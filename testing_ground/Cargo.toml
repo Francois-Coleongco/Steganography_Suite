@@ -12,3 +12,7 @@ hmac = "0.12"           # HMAC for PBKDF2
 sha2 = "0.10"           # SHA-256 hash function
 hex = "0.4"             # For encoding/decoding
 bcrypt = "0.15.1"
+zeroize = "1.8.1"
+crypto = "0.5.1"
+aead = "0.5.2"
+aes-gcm = "0.10.3"
