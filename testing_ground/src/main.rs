@@ -48,8 +48,8 @@ fn authenticate_derive() -> [u8; 32] {
 }
 
 fn encrypt(
-    key: [u8; 32],
-    data: String,
+    key: &[u8; 32],
+    data: &String,
 ) -> (
     Vec<u8>,
     GenericArray<u8, <Aes256Gcm as AeadCore>::NonceSize>,
@@ -62,7 +62,7 @@ fn encrypt(
     // are compelte
     //
 
-    let cipher = Aes256Gcm::new(&key.into());
+    let cipher = Aes256Gcm::new(key.into());
 
     let nonce = Aes256Gcm::generate_nonce(OsRng);
 
@@ -73,24 +73,28 @@ fn encrypt(
     (ciphertext, nonce)
 }
 
-fn decrypt(key: [u8; 32], nonce: [u8], encrypted_data: String) {
+fn decrypt(
+    key: [u8; 32],
+    nonce: GenericArray<u8, <Aes256Gcm as AeadCore>::NonceSize>,
+    encrypted_data: String,
+) {
     // encrypted_data is originally bytes from a file that are converted to a string.
     //
     // remember to zeroize key and decrypted data variable after all decryption proccesses are
     // complete<F12>
     let cipher = Aes256Gcm::new(&key.into());
-    cipher.decrypt(nonce, encrypted_data);
+    let plaintext = cipher.decrypt(&nonce, encrypted_data.as_bytes());
+
+    println!("{:?}", plaintext);
 }
 
-fn add_entry(data_name: &str, data: &String) {
+fn add_entry(data_name: &str, data: &mut String) {
     let key = authenticate_derive();
 
-    println!("data: {}", data);
-    println!("{:?}", key);
-
+    // when writing data make sure to zeroize it after
     //  save the salt as the second line after the password
 
-    encrypt(key, data.to_string());
+    let (ciphertext, nonce) = encrypt(&key, &data.to_string());
 
     let mut file = OpenOptions::new()
         .create(true)
@@ -105,6 +109,10 @@ fn add_entry(data_name: &str, data: &String) {
     file.write_all(data.as_bytes())
         .expect("Unable to write data");
     //  encrypt with 256 aes (key derived is 32 bytes aka 32 bytes = 8 bits/byte * 32 bytes = 256 bits)
+    //
+    //
+    data.zeroize();
+    data_name.zeroize();
 }
 
 fn add_entry_handler() {
@@ -128,7 +136,7 @@ fn add_entry_handler() {
         .read_line(&mut data)
         .expect("couldn't read input for entry data");
 
-    add_entry(&data_name, &data)
+    add_entry(&data_name, &mut data);
 }
 
 fn main() {
