@@ -99,12 +99,12 @@ fn add_entry(data_name: &mut str, data: &mut String) {
     // when writing data make sure to zeroize it after
     //  save the salt as the second line after the password
 
-    let (ciphertext, nonce) = encrypt(&key, &data.to_string());
+    let (ciphertext, nonce) = encrypt(&key, data);
 
     let mut file = OpenOptions::new()
         .create(true)
         .append(true)
-        .open(&data_name)
+        .open(data_name.trim())
         .expect("couldn't create file data_name");
 
     //  the salt will be unique. one for each password to be stored encrypted
@@ -123,7 +123,6 @@ fn add_entry(data_name: &mut str, data: &mut String) {
     //
     //
     //
-    decryptt(&key, &nonce, &ciphertext);
 
     data.zeroize();
     data_name.zeroize();
@@ -134,23 +133,27 @@ fn add_entry_handler() {
 
     let mut data = String::new();
 
-    print!("name your entry: ");
-
-    std::io::stdout().flush().expect("couldn't flush 1");
+    println!("name your entry: ");
 
     std::io::stdin()
         .read_line(&mut data_name)
         .expect("couldn't read input for entry name");
 
-    print!("\nprovide data: ");
-
-    std::io::stdout().flush().expect("couldn't flush 2");
+    println!("\nprovide data: ");
 
     std::io::stdin()
         .read_line(&mut data)
         .expect("couldn't read input for entry data");
 
     add_entry(&mut data_name, &mut data);
+}
+
+fn read_entry_handler() {
+    let mut data_name = String::new();
+
+    std::io::stdin()
+        .read_line(&mut data_name)
+        .expect("couldn't read input for entry name");
 }
 
 fn main() {
@@ -164,7 +167,7 @@ fn main() {
 
     match option.trim() {
         "1" => add_entry_handler(),
-        "2" => println!("read entry | selected"),
+        "2" => read_entry_handler(),
         "3" => println!("delete entry | selected"),
         _ => println!("that isn't an option"),
     }
