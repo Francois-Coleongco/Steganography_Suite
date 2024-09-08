@@ -238,7 +238,7 @@ fn main() {
 
     option = option.trim().to_string();
 
-    println!("enter filepath to image (encode): ");
+    println!("enter filepath to image: ");
 
     std::io::stdin()
         .read_line(&mut filepath)

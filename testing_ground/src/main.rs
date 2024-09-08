@@ -1,14 +1,17 @@
-use aead::generic_array::GenericArray;
+use aead::{consts::B0, Buffer};
 use aes_gcm::{
-    aead::{Aead, AeadCore, KeyInit, OsRng},
+    aead::{generic_array::GenericArray, Aead, AeadCore, KeyInit, OsRng},
     Aes256Gcm,
 };
+use hmac::digest::typenum::{UInt, UTerm};
 use pbkdf2::pbkdf2_hmac;
 use rand::RngCore;
 use sha2::Sha256;
 use std::fs::OpenOptions;
 use std::io::Write;
 use zeroize::Zeroize;
+
+mod stego;
 
 fn derive_key(password: &[u8], salt: &[u8]) -> [u8; 32] {
     let mut key = [0u8; 32];
@@ -65,7 +68,6 @@ fn encrypt(
     let cipher = Aes256Gcm::new(key.into());
 
     let nonce = Aes256Gcm::generate_nonce(OsRng);
-
     let ciphertext = cipher
         .encrypt(&nonce, data.as_bytes())
         .expect("couldn't convert to ciphertext");
@@ -119,13 +121,25 @@ fn add_entry(data_name: &mut str, data: &mut String) {
 
     println!("ciphertext len: {}", ciphertext.len());
     //  encrypt with 256 aes (key derived is 32 bytes aka 32 bytes = 8 bits/byte * 32 bytes = 256 bits)
-    //
-    //
-    //
-    //
+
+    // writing the nonce first, so when stego decodes, the nonce will be the first 12 bytes
+    // that were reconstructed
+
+    stego::encoder(nonce, ciphertext);
 
     data.zeroize();
     data_name.zeroize();
+}
+
+fn read_entry(data: Vec<u8>) {
+    let key = authenticate_derive();
+
+    let nonce: GenericArray<u8, <Aes256Gcm as AeadCore>::NonceSize> =
+        GenericArray::clone_from_slice(&data[0..12]);
+
+    println!("{}", nonce.len());
+
+    println!("{:?}", &data.len());
 }
 
 fn add_entry_handler() {
@@ -149,11 +163,9 @@ fn add_entry_handler() {
 }
 
 fn read_entry_handler() {
-    let mut data_name = String::new();
+    let data = stego::decoder();
 
-    std::io::stdin()
-        .read_line(&mut data_name)
-        .expect("couldn't read input for entry name");
+    read_entry(data);
 }
 
 fn main() {
