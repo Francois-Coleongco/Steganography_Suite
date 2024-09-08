@@ -83,12 +83,14 @@ fn decryptt(
     // remember to zeroize key and decrypted data variable after all decryption proccesses are
     // complete<F12>
     let cipher = Aes256Gcm::new(key.into());
-    let plaintext = cipher
+    let mut plaintext_as_utf8 = cipher
         .decrypt(nonce, ciphertext.as_ref())
-        .expect("couldn't see plain");
+        .expect("")
+        .to_ascii_lowercase();
 
-    let plaintext_as_utf8 = String::from_utf8(plaintext);
     println!("{:?}", plaintext_as_utf8);
+
+    plaintext_as_utf8.zeroize();
 }
 
 fn add_entry(data_name: &mut str, data: &mut String) {
