@@ -1,7 +1,7 @@
 use aead::generic_array::GenericArray;
 use aes_gcm::{
     aead::{Aead, AeadCore, KeyInit, OsRng},
-    Aes256Gcm, AesGcm, Key, Nonce,
+    Aes256Gcm,
 };
 use pbkdf2::pbkdf2_hmac;
 use rand::RngCore;
@@ -73,22 +73,25 @@ fn encrypt(
     (ciphertext, nonce)
 }
 
-fn decrypt(
-    key: [u8; 32],
-    nonce: GenericArray<u8, <Aes256Gcm as AeadCore>::NonceSize>,
-    encrypted_data: String,
+fn decryptt(
+    key: &[u8; 32],
+    nonce: &GenericArray<u8, <Aes256Gcm as AeadCore>::NonceSize>,
+    ciphertext: &Vec<u8>,
 ) {
     // encrypted_data is originally bytes from a file that are converted to a string.
     //
     // remember to zeroize key and decrypted data variable after all decryption proccesses are
     // complete<F12>
-    let cipher = Aes256Gcm::new(&key.into());
-    let plaintext = cipher.decrypt(&nonce, encrypted_data.as_bytes());
+    let cipher = Aes256Gcm::new(key.into());
+    let plaintext = cipher
+        .decrypt(nonce, ciphertext.as_ref())
+        .expect("couldn't see plain");
 
-    println!("{:?}", plaintext);
+    let plaintext_as_utf8 = String::from_utf8(plaintext);
+    println!("{:?}", plaintext_as_utf8);
 }
 
-fn add_entry(data_name: &str, data: &mut String) {
+fn add_entry(data_name: &mut str, data: &mut String) {
     let key = authenticate_derive();
 
     // when writing data make sure to zeroize it after
@@ -99,18 +102,27 @@ fn add_entry(data_name: &str, data: &mut String) {
     let mut file = OpenOptions::new()
         .create(true)
         .append(true)
-        .open(data_name)
+        .open(&data_name)
         .expect("couldn't create file data_name");
 
     //  the salt will be unique. one for each password to be stored encrypted
 
     // ENCRYPT IT FIRST BEFORE YOU WRITE TO FILE VVV
 
-    file.write_all(data.as_bytes())
-        .expect("Unable to write data");
+    file.write_all(&nonce)
+        .expect("unable to write nonce to file");
+
+    file.write_all(&ciphertext)
+        .expect("Unable to write ciphertext to file");
+
+    println!("ciphertext len: {}", ciphertext.len());
     //  encrypt with 256 aes (key derived is 32 bytes aka 32 bytes = 8 bits/byte * 32 bytes = 256 bits)
     //
     //
+    //
+    //
+    decryptt(&key, &nonce, &ciphertext);
+
     data.zeroize();
     data_name.zeroize();
 }
@@ -136,7 +148,7 @@ fn add_entry_handler() {
         .read_line(&mut data)
         .expect("couldn't read input for entry data");
 
-    add_entry(&data_name, &mut data);
+    add_entry(&mut data_name, &mut data);
 }
 
 fn main() {
