@@ -204,7 +204,11 @@ fn decode_alpha(img: ImageBuffer<Rgba<u8>, Vec<u8>>) -> (Vec<u8>, u32) {
     (final_bytes, storage)
 }
 
-pub fn encoder(nonce: GenericArray<u8, <Aes256Gcm as AeadCore>::NonceSize>, ciphertext: Vec<u8>) {
+pub fn encoder(
+    master_salt: [u8; 16],
+    nonce: GenericArray<u8, <Aes256Gcm as AeadCore>::NonceSize>,
+    ciphertext: Vec<u8>,
+) {
     let filepath = get_input();
 
     let image = image::open(filepath).expect("error opening");
@@ -216,7 +220,9 @@ pub fn encoder(nonce: GenericArray<u8, <Aes256Gcm as AeadCore>::NonceSize>, ciph
     save_buffer("direct_copy.png", &img_as_rgba, width, height, Rgba8)
         .expect("failed to direct-copy");
 
-    let mut payload = nonce.to_vec();
+    let mut payload = master_salt.to_vec();
+
+    payload.extend(nonce);
 
     payload.extend(&ciphertext);
 
@@ -244,6 +250,8 @@ pub fn decoder() -> Vec<u8> {
     let (data, length) = decode_alpha(img_as_rgba);
 
     println!("bytes found: {}\n\n\n", length); // it did get in. this is whats being pritned. it says the number of bytes aka the number of chars in the message written
+                                               //
+    println!("bytes contents: {:?}", data);
     data
 }
 
