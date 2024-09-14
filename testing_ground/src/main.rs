@@ -22,19 +22,7 @@ fn generate_salt() -> [u8; 16] {
     salt
 }
 
-fn authenticate_derive_init() -> ([u8; 32], [u8; 16]) {
-    let mut master_password = String::new();
-
-    print!("enter master password: ");
-
-    std::io::stdout().flush().expect("couldn't flush 3");
-
-    std::io::stdin()
-        .read_line(&mut master_password)
-        .expect("couldn't read input");
-
-    println!("{}", master_password);
-
+fn authenticate_derive_init(master_password: &mut String) -> ([u8; 32], [u8; 16]) {
     let salt = generate_salt();
 
     let key = derive_key(master_password.trim().as_bytes(), &salt); // master_password the only
@@ -45,21 +33,7 @@ fn authenticate_derive_init() -> ([u8; 32], [u8; 16]) {
     (key, salt) // feed salt into another function to save to the img file along with the data
 } // ran when adding an entry
 
-fn authenticate_derive(salt: [u8; 16]) -> [u8; 32] {
-    let mut master_password = String::new();
-
-    print!("enter master password: ");
-
-    std::io::stdout().flush().expect("couldn't flush 3");
-
-    std::io::stdin()
-        .read_line(&mut master_password)
-        .expect("couldn't read input");
-
-    println!("{}", master_password);
-
-    let salt = salt;
-
+fn authenticate_derive(master_password: &mut String, salt: [u8; 16]) -> [u8; 32] {
     let key = derive_key(master_password.trim().as_bytes(), &salt); // master_password the only
 
     master_password.zeroize();
@@ -120,8 +94,8 @@ fn decryptt(
     plaintext_as_utf8.zeroize();
 }
 
-fn add_entry(data_name: &mut str, data: &mut String) {
-    let (key, master_salt) = authenticate_derive_init(); // write the salt to the file first
+fn add_entry(master_password: &mut String, data_name: &mut str, data: &mut String) {
+    let (key, master_salt) = authenticate_derive_init(master_password); // write the salt to the file first
 
     // when writing data make sure to zeroize it after
     //  save the salt as the second line after the password
@@ -135,19 +109,18 @@ fn add_entry(data_name: &mut str, data: &mut String) {
 
     // writing the nonce first, so when stego decodes, the nonce will be the first 12 bytes
     // that were reconstructed
-
     stego::encoder(master_salt, nonce, ciphertext);
 
     data.zeroize();
     data_name.zeroize();
 }
 
-fn read_entry(data: Vec<u8>) {
+fn read_entry(master_password: &mut String, data: Vec<u8>) {
     let salt: &[u8; 16] = &data[0..16]
         .try_into()
         .expect("couldn't convert salt slice to salt arr");
 
-    let key = authenticate_derive(*salt);
+    let key = authenticate_derive(master_password, *salt);
 
     let nonce: GenericArray<u8, <Aes256Gcm as AeadCore>::NonceSize> =
         GenericArray::clone_from_slice(&data[16..28]);
@@ -163,44 +136,51 @@ fn read_entry(data: Vec<u8>) {
     decryptt(&key, &nonce, &data[28..].to_vec())
 }
 
-fn add_entry_handler() {
-    let mut data_name = String::new();
-
-    let mut data = String::new();
-
-    println!("name your entry: ");
-
-    std::io::stdin()
-        .read_line(&mut data_name)
-        .expect("couldn't read input for entry name");
-
-    println!("\nprovide data: ");
-
-    std::io::stdin()
-        .read_line(&mut data)
-        .expect("couldn't read input for entry data");
-
-    add_entry(&mut data_name, &mut data);
-}
-
-fn read_entry_handler() {
+fn read_entry_handler(master_password: &mut String) {
     let data = stego::decoder();
 
-    read_entry(data);
+    read_entry(master_password, data);
 }
 
 fn main() {
-    println!("welcome to stego-rs\nplease select an option:\n\n1 = add entry\n2 = read entry\n3 = delete entry");
+    println!("welcome to stego-rs\n");
+    let mut master_password = String::new();
+    println!("enter master password: ");
+
+    std::io::stdin()
+        .read_line(&mut master_password)
+        .expect("couldn't read input");
+
+    println!("{}", master_password);
+
+    println!("please select an option:\n\n1 = add entry\n2 = read entry\n3 = delete entry");
 
     let mut option = String::new();
-
     std::io::stdin()
         .read_line(&mut option)
         .expect("couldn't read selected option");
 
     match option.trim() {
-        "1" => add_entry_handler(),
-        "2" => read_entry_handler(),
+        "1" => {
+            let mut data_name = String::new();
+
+            let mut data = String::new();
+
+            println!("name your entry: ");
+
+            std::io::stdin()
+                .read_line(&mut data_name)
+                .expect("couldn't read input for entry name");
+
+            println!("\nprovide data: ");
+
+            std::io::stdin()
+                .read_line(&mut data)
+                .expect("couldn't read input for entry data");
+
+            add_entry(&mut master_password, &mut data_name, &mut data)
+        }
+        "2" => read_entry_handler(&mut master_password),
         "3" => println!("delete entry | selected"),
         _ => println!("that isn't an option"),
     }
