@@ -1,7 +1,7 @@
-use aead::{generic_array::GenericArray, AeadCore, Buffer};
-use aes_gcm::{aead::OsRng, Aes256Gcm};
+use aead::{generic_array::GenericArray, AeadCore};
+use aes_gcm::Aes256Gcm;
 use image::{save_buffer, ColorType::Rgba8, GenericImageView, ImageBuffer, Rgba};
-use std::{io::Read, iter::Extend};
+use std::iter::Extend;
 
 fn encode_alpha(
     img: ImageBuffer<Rgba<u8>, Vec<u8>>,
@@ -208,10 +208,9 @@ pub fn encoder(
     master_salt: [u8; 16],
     nonce: GenericArray<u8, <Aes256Gcm as AeadCore>::NonceSize>,
     ciphertext: Vec<u8>,
+    file_path: String,
 ) {
-    let filepath = get_input();
-
-    let image = image::open(filepath).expect("error opening");
+    let image = image::open(file_path).expect("error opening");
 
     let img_as_rgba: ImageBuffer<Rgba<u8>, Vec<u8>> = image.to_rgba8();
 
@@ -240,10 +239,8 @@ pub fn encoder(
         .expect("failed to message-copy");
 }
 
-pub fn decoder() -> Vec<u8> {
-    let filepath = get_input();
-
-    let image = image::open(filepath).expect("error opening");
+pub fn decoder(file_path: String) -> Vec<u8> {
+    let image = image::open(file_path).expect("error opening");
 
     let img_as_rgba: ImageBuffer<Rgba<u8>, Vec<u8>> = image.to_rgba8();
 
@@ -253,18 +250,4 @@ pub fn decoder() -> Vec<u8> {
                                                //
     println!("bytes contents: {:?}", data);
     data
-}
-
-fn get_input() -> String {
-    let mut filepath = String::new();
-
-    println!("enter filepath to image: ");
-
-    std::io::stdin()
-        .read_line(&mut filepath)
-        .expect("unable to read filepath");
-
-    filepath = filepath.trim().to_string();
-
-    filepath
 }

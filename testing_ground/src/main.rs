@@ -94,7 +94,12 @@ fn decryptt(
     plaintext_as_utf8.zeroize();
 }
 
-fn add_entry(master_password: &mut String, data_name: &mut str, data: &mut String) {
+fn add_entry(
+    master_password: &mut String,
+    data_name: &mut str,
+    data: &mut String,
+    file_path: String,
+) {
     let (key, master_salt) = authenticate_derive_init(master_password); // write the salt to the file first
 
     // when writing data make sure to zeroize it after
@@ -109,7 +114,7 @@ fn add_entry(master_password: &mut String, data_name: &mut str, data: &mut Strin
 
     // writing the nonce first, so when stego decodes, the nonce will be the first 12 bytes
     // that were reconstructed
-    stego::encoder(master_salt, nonce, ciphertext);
+    stego::encoder(master_salt, nonce, ciphertext, file_path);
 
     data.zeroize();
     data_name.zeroize();
@@ -137,7 +142,17 @@ fn read_entry(master_password: &mut String, data: Vec<u8>) {
 }
 
 fn read_entry_handler(master_password: &mut String) {
-    let data = stego::decoder();
+    let mut filepath = String::new();
+
+    println!("enter filepath to image: ");
+
+    std::io::stdin()
+        .read_line(&mut filepath)
+        .expect("unable to read filepath");
+
+    filepath = filepath.trim().to_string();
+
+    let data = stego::decoder(filepath);
 
     read_entry(master_password, data);
 }
@@ -178,7 +193,7 @@ fn main() {
                 .read_line(&mut data)
                 .expect("couldn't read input for entry data");
 
-            add_entry(&mut master_password, &mut data_name, &mut data)
+            add_entry(&mut master_password, &mut data_name, &mut data, file_path)
         }
         "2" => read_entry_handler(&mut master_password),
         "3" => println!("delete entry | selected"),
