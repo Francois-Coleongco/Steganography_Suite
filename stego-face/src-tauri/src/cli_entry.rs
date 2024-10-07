@@ -32,7 +32,7 @@ fn authenticate_derive_init(mut master_password: String) -> ([u8; 32], [u8; 16])
     (key, salt) // feed salt into another function to save to the img file along with the data
 } // ran when adding an entry
 
-fn authenticate_derive(master_password: &mut String, salt: [u8; 16]) -> [u8; 32] {
+fn authenticate_derive(mut master_password: String, salt: [u8; 16]) -> [u8; 32] {
     let key = derive_key(master_password.trim().as_bytes(), &salt); // master_password the only
 
     master_password.zeroize();
@@ -77,7 +77,7 @@ fn decryptt(
     key: &[u8; 32],
     nonce: &GenericArray<u8, <Aes256Gcm as AeadCore>::NonceSize>,
     ciphertext: &Vec<u8>,
-) {
+) -> Vec<u8> {
     // encrypted_data is originally bytes from a file that are converted to a string.
     //
     // remember to zeroize key and decrypted data variable after all decryption proccesses are
@@ -93,18 +93,14 @@ fn decryptt(
     println!("key ;;;;; {:?}", key);
 
     plaintext_as_utf8.zeroize();
+
+    plaintext_as_utf8
 }
 
-pub fn add_entry(
-    mut master_password: String,
-    mut data_name: String,
-    mut data: String,
-    mut file_path: String,
-) {
-    let (key, master_salt) = authenticate_derive_init(master_password); // write the salt to the file first
-                                                                        // when writing data make sure to zeroize it after
-                                                                        //  save the salt as the second line after the password
-
+pub fn add_entry(master_password: String, data: String, file_path: String) {
+    let (mut key, master_salt) = authenticate_derive_init(master_password); // write the salt to the file first
+                                                                            // when writing data make sure to zeroize it after
+                                                                            //  save the salt as the second line after the password
     let (ciphertext, nonce) = encrypt(&key, data);
 
     println!("ciphertext len: {}", ciphertext.len());
@@ -115,9 +111,10 @@ pub fn add_entry(
     // writing the nonce first, so when stego decodes, the nonce will be the first 12 bytes
     // that were reconstructed
     stego::encoder(master_salt, nonce, ciphertext, file_path);
+    key.zeroize();
 }
 
-fn read_entry(master_password: &mut String, data: Vec<u8>, file_path: &String) {
+fn read_entry(master_password: String, data: Vec<u8>) -> Vec<u8> {
     let salt: &[u8; 16] = &data[0..16]
         .try_into()
         .expect("couldn't convert salt slice to salt arr");
@@ -135,11 +132,13 @@ fn read_entry(master_password: &mut String, data: Vec<u8>, file_path: &String) {
 
     println!("{:?}", &data.len());
 
-    decryptt(&key, &nonce, &data[28..].to_vec())
+    let decrypted_data = decryptt(&key, &nonce, &data[28..].to_vec());
+
+    decrypted_data
 }
 
-pub fn read_entry_handler(master_password: &mut String, file_path: &String) {
+pub fn read_entry_handler(master_password: String, file_path: &String) -> Vec<u8> {
     let data = stego::decoder(file_path);
 
-    read_entry(master_password, data, file_path);
+    return read_entry(master_password, data);
 }

@@ -1,7 +1,7 @@
-use aead::{generic_array::GenericArray, AeadCore, Buffer};
-use aes_gcm::{aead::OsRng, Aes256Gcm};
+use aead::{generic_array::GenericArray, AeadCore};
+use aes_gcm::Aes256Gcm;
 use image::{save_buffer, ColorType::Rgba8, GenericImageView, ImageBuffer, Rgba};
-use std::{io::Read, iter::Extend};
+use std::iter::Extend;
 
 fn encode_alpha(
     img: ImageBuffer<Rgba<u8>, Vec<u8>>,
@@ -208,9 +208,9 @@ pub fn encoder(
     master_salt: [u8; 16],
     nonce: GenericArray<u8, <Aes256Gcm as AeadCore>::NonceSize>,
     ciphertext: Vec<u8>,
-    mut file_path: String,
+    file_path: String,
 ) {
-    let image = image::open(file_path).expect("error opening");
+    let image = image::open(&file_path).expect("error opening");
 
     let img_as_rgba: ImageBuffer<Rgba<u8>, Vec<u8>> = image.to_rgba8();
 
@@ -235,7 +235,7 @@ pub fn encoder(
 
     let new_image_buffer = encode_alpha(img_as_rgba, &payload);
 
-    save_buffer("message_copy.png", &new_image_buffer, width, height, Rgba8)
+    save_buffer(&file_path, &new_image_buffer, width, height, Rgba8)
         .expect("failed to message-copy");
 }
 
