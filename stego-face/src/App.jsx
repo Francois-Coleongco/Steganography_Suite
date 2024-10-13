@@ -43,6 +43,10 @@ function App() {
     if (toggleAddRead === 0) {
         return (
             <div className="container">
+
+                <h1>Encrypted Steganography Suite</h1>
+
+                <br />
                 <button onClick={() => { setToggleAddRead(1) }}>switch to decrypt</button>
                 <form
                     id="add_entry"
@@ -78,6 +82,8 @@ function App() {
         return (
             <div className="container">
 
+                <h1>Encrypted Steganography Suite</h1>
+                <br />
                 <button onClick={() => { setToggleAddRead(0) }}>switch to encrypt</button>
                 <p>read entry</p>
 

@@ -19,6 +19,8 @@ I saw a youtube short of PirateSoftware talking about how he stores his password
 
 Download the binary in the root project directory titled `stego` and run it
 
+The saved image containing your message will be saved in the original directory of your file with a new file name "<old_file_name> (sneaky).<ext>"
+
 See Video for Demo:
 
 <video will be here sometime i needa make it look pretty before iwanna show ittt>
