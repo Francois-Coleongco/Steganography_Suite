@@ -12,7 +12,7 @@ fn encode_alpha(
 
     println!("bytes: {}", bytes);
 
-    if (message.len() * 8) > bytes as usize {
+    if message.len() * 8 > bytes as usize - 8 {
         // * 8 because a byte is 8 bits and since this is
         // steganography, i am copying bit by bit to every pixel
         panic!("Input is too large for image size");
@@ -208,16 +208,14 @@ pub fn encoder(
     master_salt: [u8; 16],
     nonce: GenericArray<u8, <Aes256Gcm as AeadCore>::NonceSize>,
     ciphertext: Vec<u8>,
-    file_path: String,
+    mut file_path: String,
 ) {
+    println!("entered encoder");
     let image = image::open(&file_path).expect("error opening");
 
     let img_as_rgba: ImageBuffer<Rgba<u8>, Vec<u8>> = image.to_rgba8();
 
     let (width, height) = image.dimensions();
-
-    save_buffer("direct_copy.png", &img_as_rgba, width, height, Rgba8)
-        .expect("failed to direct-copy");
 
     let mut payload = master_salt.to_vec();
 
@@ -235,7 +233,15 @@ pub fn encoder(
 
     let new_image_buffer = encode_alpha(img_as_rgba, &payload);
 
-    save_buffer(&file_path, &new_image_buffer, width, height, Rgba8)
+    if let Some(pos) = file_path.rfind(".") {
+        file_path.insert_str(pos, " (sneaky)");
+    } else {
+        panic!("WHAT HTE FUCIKK")
+    }
+
+    println!("{}", file_path);
+
+    save_buffer(file_path, &new_image_buffer, width, height, Rgba8)
         .expect("failed to message-copy");
 }
 

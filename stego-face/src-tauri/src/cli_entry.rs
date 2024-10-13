@@ -77,13 +77,13 @@ fn decryptt(
     key: &[u8; 32],
     nonce: &GenericArray<u8, <Aes256Gcm as AeadCore>::NonceSize>,
     ciphertext: &Vec<u8>,
-) -> Vec<u8> {
+) -> String {
     // encrypted_data is originally bytes from a file that are converted to a string.
     //
     // remember to zeroize key and decrypted data variable after all decryption proccesses are
     // complete<F12>
     let cipher = Aes256Gcm::new(key.into());
-    let mut plaintext_as_utf8 = cipher
+    let plaintext_as_utf8 = cipher
         .decrypt(nonce, ciphertext.as_ref())
         .expect("")
         .to_ascii_lowercase();
@@ -92,9 +92,9 @@ fn decryptt(
 
     println!("key ;;;;; {:?}", key);
 
-    plaintext_as_utf8.zeroize();
+    let final_msg = String::from_utf8(plaintext_as_utf8).expect("");
 
-    plaintext_as_utf8
+    final_msg
 }
 
 pub fn add_entry(master_password: String, data: String, file_path: String) {
@@ -114,7 +114,7 @@ pub fn add_entry(master_password: String, data: String, file_path: String) {
     key.zeroize();
 }
 
-fn read_entry(master_password: String, data: Vec<u8>) -> Vec<u8> {
+fn read_entry(master_password: String, data: Vec<u8>) -> String {
     let salt: &[u8; 16] = &data[0..16]
         .try_into()
         .expect("couldn't convert salt slice to salt arr");
@@ -134,10 +134,11 @@ fn read_entry(master_password: String, data: Vec<u8>) -> Vec<u8> {
 
     let decrypted_data = decryptt(&key, &nonce, &data[28..].to_vec());
 
+    println!("{}", decrypted_data);
     decrypted_data
 }
 
-pub fn read_entry_handler(master_password: String, file_path: &String) -> Vec<u8> {
+pub fn read_entry_handler(master_password: String, file_path: &String) -> String {
     let data = stego::decoder(file_path);
 
     return read_entry(master_password, data);

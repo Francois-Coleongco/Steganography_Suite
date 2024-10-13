@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import reactLogo from "./assets/react.svg";
 import { invoke } from "@tauri-apps/api/core";
+import { open } from "@tauri-apps/plugin-shell";
 import "./App.css";
 
 function App() {
@@ -13,7 +14,12 @@ function App() {
 
     const [secwet_data, set_secwet_data] = useState("")
 
+
+    const [toggleAddRead, setToggleAddRead] = useState(0)
+
+
     async function invoke_add_entry() {
+        console.log(file_path_add)
         invoke('invoke_add_entry', { masterPassword: master_password_add_entry, data: data_add, filePath: file_path_add })
     }
 
@@ -29,57 +35,79 @@ function App() {
     }
 
 
-    return (
-        <div className="container">
+    useEffect(() => {
+        console.log(file_path_add)
+        console.log(file_path_read)
+    })
 
-            <form className="row"
-                id="add_entry"
-                onSubmit={(e) => {
-                    e.preventDefault();
-                    invoke_add_entry()
-                }}>
+    if (toggleAddRead === 0) {
+        return (
+            <div className="container">
+                <button onClick={() => { setToggleAddRead(1) }}>switch to decrypt</button>
+                <form
+                    id="add_entry"
+                    onSubmit={(e) => {
+                        e.preventDefault();
+                        invoke_add_entry()
+                    }}>
 
-                <p> this form must only be shown to user if they are adding an entry (NOT READING)</p>
-                <input
-                    onChange={(e) => set_master_password_add_entry(e.currentTarget.value)}
-                    placeholder="Enter a master_password_add_entry"
-                />
-                <input
-                    onChange={(e) => set_data_add(e.currentTarget.value)}
-                    placeholder="Enter data"
-                />
-                <input
-                    onChange={(e) => set_file_path_add(e.currentTarget.value)}
-                    placeholder="Enter a file_path"
-                />
-                <input type="submit" />
-            </form>
+                    <br />
+                    <input
+                        onChange={(e) => set_master_password_add_entry(e.currentTarget.value)}
+                        placeholder="Enter a master_password_add_entry"
+                    />
+                    <br />
+                    <input
+                        onChange={(e) => set_data_add(e.currentTarget.value)}
+                        placeholder="Enter data"
+                    />
+                    <br />
+                    <input
+                        onChange={(e) => set_file_path_add(e.currentTarget.value)}
+                        placeholder="Select a file_path"
+                    />
+                    <br />
+                    <input type="submit" />
+                </form>
+            </div>
+        );
+    }
 
-            <p>read entry</p>
+    else {
 
-            <form
-                id="read_entry"
-                onSubmit={(e) => {
-                    e.preventDefault()
-                    invoke_read_entry_handler()
-                }}
+        return (
+            <div className="container">
 
-            >
-                <input
-                    onChange={(e) => set_master_password_read_entry(e.currentTarget.value)}
-                    placeholder="Enter a master_password"
-                />
-                <input
-                    onChange={(e) => set_file_path_read(e.currentTarget.value)}
-                    placeholder="Enter a file_path"
-                />
-                <input type="submit" />
-            </form>
+                <button onClick={() => { setToggleAddRead(0) }}>switch to encrypt</button>
+                <p>read entry</p>
+
+                <form
+                    id="read_entry"
+                    onSubmit={(e) => {
+                        e.preventDefault()
+                        invoke_read_entry_handler()
+                    }}
+
+                >
+                    <input
+                        onChange={(e) => set_master_password_read_entry(e.currentTarget.value)}
+                        placeholder="Enter a master_password"
+                    />
+                    <br />
+                    <input
+                        onChange={(e) => set_file_path_read(e.currentTarget.value)}
+                        placeholder="Select a file_path"
+                    />
+                    <br />
+                    <input type="submit" />
+                </form>
 
 
-            <p>{secwet_data}</p>
-        </div >
-    );
+
+                <p> {secwet_data}</p>
+            </div>
+        )
+    }
+
 }
-
 export default App;

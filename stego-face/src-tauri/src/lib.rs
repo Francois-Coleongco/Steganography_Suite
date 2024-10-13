@@ -6,11 +6,12 @@ mod cli_entry;
 // Learn more about Tauri commands at https://tauri.app/v1/guides/features/command
 #[tauri::command]
 fn invoke_add_entry(master_password: String, data: String, file_path: String) {
+    println!("file_path: {}", file_path);
     add_entry(master_password, data, file_path);
 }
 
 #[tauri::command]
-fn invoke_read_entry(master_password: String, file_path: String) -> Vec<u8> {
+fn invoke_read_entry(master_password: String, file_path: String) -> String {
     return read_entry_handler(master_password, &file_path);
 }
 
