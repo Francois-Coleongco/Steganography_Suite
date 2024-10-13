@@ -23,6 +23,8 @@ The saved image containing your message will be saved in the original directory 
 
 See Video for Demo:
 
+https://github.com/user-attachments/assets/b08b20c4-4a31-42e2-86ac-26808caa0db3
+
 ## TECH USED:
 
 crab lang (rust and the tauri framework for the GUI)
@@ -34,7 +36,10 @@ Javascript (for the front end)
 
 First I made the encoding and decoding CLI. This was in the `original` folder. Here I took an ascii message and sequentially stored it's bits into the LSB (least significant bit) of every alpha channel byte (the one that controls opacity of a pixel). I had  the message length encoded into the last 32 pixels of the image.
 
-Next I added encryption to the CLI via  the AES-GCM 256 bit algorithm provided by the rust crate aes-gcm. Lovely lovely crate hehe
+Next I added encryption to the CLI via  the AES-GCM 256 bit algorithm provided by the rust crate aes
+
+
+-gcm. Lovely lovely crate hehe
 
 Then it was finally time to slap on a GUI because it didn't feel as intuitive for me to use during testing lol
 
