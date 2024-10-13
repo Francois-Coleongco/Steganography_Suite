@@ -25,6 +25,7 @@ See Video for Demo:
 
 <video will be here sometime i needa make it look pretty before iwanna show ittt>
 
+[DEMO](https://github.com/Chris-Coleongco/Steganography_Suite/blob/main/demo.mp4?raw=true)
 
 ## TECH USED:
 
