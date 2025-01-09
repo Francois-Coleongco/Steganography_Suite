@@ -1,0 +1,1 @@
+check read_entry's return decrypt_data (string) against add_entry's file write (string)

@@ -103,6 +103,8 @@ pub fn add_entry(master_password: String, data: String, file_path: String) {
                                                                             //  save the salt as the second line after the password
     let (ciphertext, nonce) = encrypt(&key, data);
 
+    // this is where to write data to file to test
+
     println!("ciphertext len: {}", ciphertext.len());
 
     println!("ciphertext from encrypt: {:?}", ciphertext);
