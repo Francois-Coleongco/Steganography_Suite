@@ -6,8 +6,14 @@ use pbkdf2::pbkdf2_hmac;
 use rand::RngCore;
 use sha2::Sha256;
 use zeroize::Zeroize;
+use std::fs;
 
 mod stego;
+
+fn check_file_ext(file_path: &String) -> bool{
+    println!("this is what check_file_ext got {}", file_path);
+    file_path.ends_with(".jpg") || file_path.ends_with(".png")
+}
 
 fn derive_key(password: &[u8], salt: &[u8]) -> [u8; 32] {
     let mut key = [0u8; 32];
@@ -98,12 +104,21 @@ fn decryptt(
 }
 
 pub fn add_entry(master_password: String, data: String, file_path: String) {
+
+    if !check_file_ext(&file_path) {
+
+        panic!("file extension was not correct | file_path received => {}", &file_path)
+
+    }
     let (mut key, master_salt) = authenticate_derive_init(master_password); // write the salt to the file first
                                                                             // when writing data make sure to zeroize it after
                                                                             //  save the salt as the second line after the password
+    fs::write("data.bytes", &data).expect("couldn't write data to data.bytes");
+
     let (ciphertext, nonce) = encrypt(&key, data);
 
     // this is where to write data to file to test
+
 
     println!("ciphertext len: {}", ciphertext.len());
 
@@ -137,6 +152,13 @@ fn read_entry(master_password: String, data: Vec<u8>) -> String {
     let decrypted_data = decryptt(&key, &nonce, &data[28..].to_vec());
 
     println!("{}", decrypted_data);
+
+    let data_from_file = fs::read("data.bytes").expect("couldn't read from data.bytes file to check for inconsistent data enc/dec");
+
+    let decrypted_data_as_bytes = decrypted_data.as_bytes();
+
+    assert_eq!(data_from_file, decrypted_data_as_bytes, "testing the equality of initial data => {:?} AND decrypted data => {:?}", data_from_file, decrypted_data_as_bytes);
+    
     decrypted_data
 }
 
