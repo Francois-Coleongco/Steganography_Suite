@@ -91,8 +91,7 @@ fn decryptt(
     let cipher = Aes256Gcm::new(key.into());
     let plaintext_as_utf8 = cipher
         .decrypt(nonce, ciphertext.as_ref())
-        .expect("")
-        .to_ascii_lowercase();
+        .expect("decryptoin failed");
 
     println!("{:?}", plaintext_as_utf8);
 
