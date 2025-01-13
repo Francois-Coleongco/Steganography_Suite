@@ -21,9 +21,9 @@ Download the binary in the root project directory titled `stego` and run it
 
 The saved image containing your message will be saved in the original directory of your file with a new file name "<old_file_name> (sneaky).<ext>"
 
-See Video for Demo:
+### See Video for Demo:
 
-https://github.com/user-attachments/assets/b08b20c4-4a31-42e2-86ac-26808caa0db3
+[![STEGO_DEMO](https://img.youtube.com/vi/fdV8vb1Gvhg/0.jpg)](https://www.youtube.com/watch?v=fdV8vb1Gvhg)
 
 ## TECH USED:
 
