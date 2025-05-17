@@ -23,8 +23,6 @@ The saved image containing your message will be saved in the original directory 
 
 ### See Video for Demo:
 
-[![STEGO_DEMO](https://img.youtube.com/vi/fdV8vb1Gvhg/0.jpg)](https://www.youtube.com/watch?v=fdV8vb1Gvhg)
-
 ## TECH USED:
 
 crab lang (rust and the tauri framework for the GUI)
