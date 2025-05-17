@@ -21,8 +21,6 @@ Download the binary in the root project directory titled `stego` and run it
 
 The saved image containing your message will be saved in the original directory of your file with a new file name "<old_file_name> (sneaky).<ext>"
 
-### See Video for Demo:
-
 ## TECH USED:
 
 crab lang (rust and the tauri framework for the GUI)
