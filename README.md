@@ -12,7 +12,7 @@ But unlike most implementations, this one includes AES-GCM 256 bit encryption wi
 
 ## WHY DID YOU MAKE THIS
 
-I saw a youtube short of PirateSoftware talking about how he stores his passwords with steganography and I was like, you know that might actually be cool to implement with encryption then i could have my own local password manager based on just images.
+so i could have my own local encrypted password manager based on just images.
 
 
 ## HOW TO USE:
