@@ -1,45 +1,105 @@
-# Steganography Suite
+# 🕵️ Steganography Suite
 
-### Note: The folder `stego-face` is the folder containing the GUI version of this project. It is also contains the most up to date version of the folders `original` and `testing_ground`
+This project is a fully local steganography and encryption tool that lets you encode and decode secret messages inside image files — complete with a modern GUI.
 
-## WHAT IS THIS:
+Unlike most stego tools, this one adds an extra layer of **AES-GCM 256-bit encryption**, secured by a master password. In other words: not only is your data hidden inside an image — it’s also encrypted.
 
-According to Kaspersky: Steganography is the practice of concealing information within another message or physical object to avoid detection. 
+---
 
-This app allows you (through a GUI) to encode and decode a secret into an image file.
+## 🗂 Note on Structure
 
-But unlike most implementations, this one includes AES-GCM 256 bit encryption with a master password.
+The folder `stego-face/` contains the **GUI version** of the app and is the **most up-to-date**. It also includes:
 
-## WHY DID YOU MAKE THIS
+- `original/` – the original CLI version
+- `testing_ground/` – for experiments and development
 
-so i could have my own local encrypted password manager based on just images.
+---
+
+## ❓ What Is This?
+
+> *“Steganography is the practice of concealing information within another message or physical object to avoid detection.”*  
+> — Kaspersky
+
+This app lets you **encode and decode hidden messages inside images**. It supports:
+
+- **Message hiding** in the least significant bits of image pixels
+- **AES-256-GCM encryption** using a password
+- **Cross-platform GUI** (built with Tauri + JS frontend)
+
+So yes, it’s kind of like a **password manager that hides your vault in a PNG**.
+
+---
+
+## 🧠 Why I Built This
+
+I wanted a completely local, lightweight, encrypted password manager...  
+But one that uses **images** as the storage format.  
+So I built my own tool using Rust, Tauri, and some LSB magic.
+
+---
+
+## 🖱 How to Use
+
+1. Download the binary named `stego` from the root directory.
+2. Run the app.
+3. Use the GUI to:
+   - **Encode** a secret message into an image.
+   - **Decode** a message from an image (with your password).
+
+### 🔄 Output
+
+When you encode a message, the new image will be saved in the **same directory as the original** — but renamed to:
+
+<original_filename> (sneaky).<extension>
 
 
-## HOW TO USE:
+Example:  
+`passwords.png` → `passwords (sneaky).png`
 
-Download the binary in the root project directory titled `stego` and run it
+---
 
-The saved image containing your message will be saved in the original directory of your file with a new file name "<old_file_name> (sneaky).<ext>"
+## 🧪 How It Works
 
-## TECH USED:
+### 🔐 Step 1 – Encryption
 
-crab lang (rust and the tauri framework for the GUI)
+Before encoding, the message is **encrypted using AES-256-GCM**, provided by the [Rust `aes-gcm`](https://docs.rs/aes-gcm/latest/aes_gcm/) crate.
 
-Javascript (for the front end)
+- Encryption/decryption is done locally via PBKDF2 password to symmetric key derivation.
+
+### 🖼️ Step 2 - Encoding
+
+- Read the given message with bit-masking.
+- Stores each bit into the **LSB of the alpha channel** (opacity byte) of each pixel.
+- The **last 32 pixels** of the image are reserved for the message length (in bits).
+(looking back this was a weird implementation, size should be first ideally)
 
 
-## HOW IT WORKS:
+### 🎨 Step 3 – GUI (in `stego-face/`)
 
-First I made the encoding and decoding CLI. This was in the `original` folder. Here I took an ascii message and sequentially stored it's bits into the LSB (least significant bit) of every alpha channel byte (the one that controls opacity of a pixel). I had  the message length encoded into the last 32 pixels of the image.
+The GUI wraps the encoding/decoding flow into a friendly frontend using:
 
-Next I added encryption to the CLI via  the AES-GCM 256 bit algorithm provided by the rust crate aes
+- **Rust + Tauri** for the backend
+- **JavaScript** for the frontend (Tauri handles bridging)
 
+It makes testing and using the tool way more intuitive.
 
--gcm. Lovely lovely crate hehe
+---
 
-Then it was finally time to slap on a GUI because it didn't feel as intuitive for me to use during testing lol
+## 🧮 Why 32 Bits for Message Length?
 
-Why did you pick 32 bits to store the message length?
+Yes, 32 bits lets us encode up to `4_294_967_295` bits for the message length — probably overkill. But `u16` (65,535 bits) would have limited the usable space in something like a 1920×1080 image.
 
-yea i know 4_294_967_295 bits to state the message length seems overkill, but the next lowest one was u16 which woulda meant 65_535 bits which wouldn't be enough to fully maximize the space on a 1920x1080 image (this would result in a max capacity of well over 1_000_000 bits).
+With `u32`, we maximize compatibility with high-res images and leave room for long encrypted payloads.
 
+---
+
+## 🧰 Tech Stack
+
+| Layer       | Tech                      |
+|-------------|---------------------------|
+| Backend     | Rust, `aes-gcm` crate     |
+| GUI Runtime | Tauri                     |
+| Frontend    | JavaScript/JSX (Tauri frontend) |
+| Image I/O   | Rust image libraries      |
+| Crypto      | AES-GCM 256-bit encryption |
+| Format      | PNGs with alpha channel   |
