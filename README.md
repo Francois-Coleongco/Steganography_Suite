@@ -1,8 +1,8 @@
 # 🕵️ Steganography Suite
 
-This project is a fully local steganography and encryption tool that lets you encode and decode secret messages inside image files — complete with a modern GUI.
+This project is a fully local steganography and encryption tool that lets you encode and decode secret messages inside image files in a desktop GUI.
 
-Unlike most stego tools, this one adds an extra layer of **AES-GCM 256-bit encryption**, secured by a master password. In other words: not only is your data hidden inside an image — it’s also encrypted.
+Unlike most stego tools, this one adds an extra layer of **AES-GCM 256-bit encryption**, secured by a master password. In other words: not only is your data hidden inside an image, it’s also encrypted.
 
 ---
 
@@ -48,7 +48,7 @@ So I built my own tool using Rust, Tauri, and some LSB magic.
 
 ### 🔄 Output
 
-When you encode a message, the new image will be saved in the **same directory as the original** — but renamed to:
+When you encode a message, the new image will be saved in the **same directory as the original** but renamed to:
 
 <original_filename> (sneaky).<extension>
 
@@ -90,6 +90,8 @@ It makes testing and using the tool way more intuitive.
 Yes, 32 bits lets us encode up to `4_294_967_295` bits for the message length — probably overkill. But `u16` (65,535 bits) would have limited the usable space in something like a 1920×1080 image.
 
 With `u32`, we maximize compatibility with high-res images and leave room for long encrypted payloads.
+
+If we really wanted to save those few bits for a greater message length, we could, but that wasn't very worth creating a new unsigned int type and making custom interpretation logic on it.
 
 ---
 
