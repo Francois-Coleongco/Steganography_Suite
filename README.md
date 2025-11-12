@@ -4,6 +4,11 @@ This project is a fully local steganography and encryption tool that lets you en
 
 Unlike most stego tools, this one adds an extra layer of **AES-GCM 256-bit encryption**, secured by a master password. In other words: not only is your data hidden inside an image, it’s also encrypted.
 
+## Demo:
+
+https://github.com/user-attachments/assets/40bda39d-a601-40ad-b08d-ecd6330cfe42
+
+
 ---
 
 ## What Is This?
