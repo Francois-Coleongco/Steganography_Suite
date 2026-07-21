@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
-import reactLogo from "./assets/react.svg";
 import { invoke } from "@tauri-apps/api/core";
 import { open } from "@tauri-apps/plugin-shell";
+import { open as openFileDialog } from "@tauri-apps/plugin-dialog";
 import "./App.css";
 
 function App() {
@@ -14,31 +14,41 @@ function App() {
 
     const [secwet_data, set_secwet_data] = useState("")
 
-
     const [toggleAddRead, setToggleAddRead] = useState(0)
 
+    async function pickFile(setter) {
+        const selected = await openFileDialog({
+            multiple: false,
+            filters: [{ name: "PNG", extensions: ["png"] }]
+        });
+        if (selected) {
+            setter(selected);
+        }
+    }
 
     async function invoke_add_entry() {
-        console.log(file_path_add)
+        console.log("add_entry: filePath =", file_path_add)
         invoke('invoke_add_entry', { masterPassword: master_password_add_entry, data: data_add, filePath: file_path_add })
+            .then(() => console.log("add_entry: success"))
+            .catch((err) => console.error("add_entry failed:", err))
     }
 
     async function invoke_read_entry() {
-        invoke('invoke_read_entry', { masterPassword: master_password_read_entry, filePath: file_path_read }).then((decrypted_data) => {
-            set_secwet_data(decrypted_data)
-        })
+        return invoke('invoke_read_entry', { masterPassword: master_password_read_entry, filePath: file_path_read })
+            .then((decrypted_data) => {
+                console.log("read_entry: got data:", decrypted_data)
+                set_secwet_data(decrypted_data)
+                return decrypted_data
+            })
+            .catch((err) => {
+                console.error("read_entry failed:", err)
+                throw err
+            })
     }
 
     async function invoke_read_entry_handler() {
         await invoke_read_entry()
-        console.log(secwet_data)
     }
-
-
-    useEffect(() => {
-        console.log(file_path_add)
-        console.log(file_path_read)
-    })
 
     if (toggleAddRead === 0) {
         return (
@@ -58,7 +68,7 @@ function App() {
                     <br />
                     <input
                         onChange={(e) => set_master_password_add_entry(e.currentTarget.value)}
-                        placeholder="Enter a master_password_add_entry"
+                        placeholder="Enter a master password"
                     />
                     <br />
                     <input
@@ -66,10 +76,9 @@ function App() {
                         placeholder="Enter data"
                     />
                     <br />
-                    <input
-                        onChange={(e) => set_file_path_add(e.currentTarget.value)}
-                        placeholder="Select a file_path"
-                    />
+                    <button type="button" onClick={() => pickFile(set_file_path_add)}>
+                        {file_path_add || "Select a PNG file"}
+                    </button>
                     <br />
                     <input type="submit" />
                 </form>
@@ -97,18 +106,15 @@ function App() {
                 >
                     <input
                         onChange={(e) => set_master_password_read_entry(e.currentTarget.value)}
-                        placeholder="Enter a master_password"
+                        placeholder="Enter a master password"
                     />
                     <br />
-                    <input
-                        onChange={(e) => set_file_path_read(e.currentTarget.value)}
-                        placeholder="Select a file_path"
-                    />
+                    <button type="button" onClick={() => pickFile(set_file_path_read)}>
+                        {file_path_read || "Select a PNG file"}
+                    </button>
                     <br />
                     <input type="submit" />
                 </form>
-
-
 
                 <p> {secwet_data}</p>
             </div>

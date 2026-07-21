@@ -1,34 +1,13 @@
 use aes_gcm::{
-    aead::{generic_array::GenericArray, Aead, AeadCore, KeyInit, OsRng},
+    aead::{generic_array::GenericArray, AeadCore, KeyInit, OsRng, Aead},
     Aes256Gcm,
 };
 use pbkdf2::pbkdf2_hmac;
 use rand::RngCore;
 use sha2::Sha256;
-use std::fs;
 use zeroize::Zeroize;
 
 mod stego;
-
-fn check_file_ext(file_path: &String) -> bool {
-    println!("this is what check_file_ext got {}", file_path);
-    file_path.ends_with(".png")
-}
-
-fn check_enc_dec_success(decrypted_data: &String) {
-    let data_from_file = fs::read("data.bytes")
-        .expect("couldn't read from data.bytes file to check for inconsistent data enc/dec");
-
-    let decrypted_data_as_bytes = decrypted_data.as_bytes();
-
-    fs::write("out.bytes", decrypted_data_as_bytes).expect("couldn't write to output");
-
-    assert_eq!(
-        data_from_file, decrypted_data_as_bytes,
-        "testing the equality of initial data => {:?} AND decrypted data => {:?}",
-        data_from_file, decrypted_data_as_bytes
-    );
-}
 
 fn derive_key(password: &[u8], salt: &[u8]) -> [u8; 32] {
     let mut key = [0u8; 32];
@@ -44,25 +23,16 @@ fn generate_salt() -> [u8; 16] {
 
 fn authenticate_derive_init(mut master_password: String) -> ([u8; 32], [u8; 16]) {
     let salt = generate_salt();
-
-    let key = derive_key(master_password.trim().as_bytes(), &salt); // master_password the only
-
-    master_password.zeroize(); // erase the memory of the user's master password from memory once
-                               // all uses of the master_password (aka the key derivation) are complete.
-
-    (key, salt) // feed salt into another function to save to the img file along with the data
-} // ran when adding an entry
+    let key = derive_key(master_password.trim().as_bytes(), &salt);
+    master_password.zeroize();
+    (key, salt)
+}
 
 fn authenticate_derive(mut master_password: String, salt: [u8; 16]) -> [u8; 32] {
-    let key = derive_key(master_password.trim().as_bytes(), &salt); // master_password the only
-
+    let key = derive_key(master_password.trim().as_bytes(), &salt);
     master_password.zeroize();
-    // get password in text
-    //
-    // use salt to derive a key
-    //
-    key // return the key
-} // ran when reading an entry
+    key
+}
 
 fn encrypt(
     key: &[u8; 32],
@@ -71,108 +41,63 @@ fn encrypt(
     Vec<u8>,
     GenericArray<u8, <Aes256Gcm as AeadCore>::NonceSize>,
 ) {
-    // encrypt data
-    //
-    // data is originally a string from the user and is passed to this function.
-    //
-    // remember to zeroize the key and data variable (plain text) after all encryption processes
-    // are compelte
-    //
-
-    println!("key ;;;;; {:?}", key);
     let cipher = Aes256Gcm::new(key.into());
-
     let nonce = Aes256Gcm::generate_nonce(OsRng);
     let ciphertext = cipher
         .encrypt(&nonce, data.as_bytes())
-        .expect("couldn't convert to ciphertext");
-
-    println!("nonce in encrypt: {:?}", nonce);
-
+        .expect("encryption failed");
     data.zeroize();
-
     (ciphertext, nonce)
 }
 
-fn decryptt(
+fn decrypt(
     key: &[u8; 32],
     nonce: &GenericArray<u8, <Aes256Gcm as AeadCore>::NonceSize>,
-    ciphertext: &Vec<u8>,
+    ciphertext: &[u8],
 ) -> String {
-    // encrypted_data is originally bytes from a file that are converted to a string.
-    //
-    // remember to zeroize key and decrypted data variable after all decryption proccesses are
-    // complete<F12>
     let cipher = Aes256Gcm::new(key.into());
-    let plaintext_as_utf8 = cipher
-        .decrypt(nonce, ciphertext.as_ref())
-        .expect("decryptoin failed");
-
-    println!("{:?}", plaintext_as_utf8);
-
-    println!("key ;;;;; {:?}", key);
-
-    let final_msg = String::from_utf8(plaintext_as_utf8).expect("");
-
-    final_msg
+    let plaintext = cipher
+        .decrypt(nonce, ciphertext)
+        .expect("decryption failed");
+    String::from_utf8(plaintext).expect("plaintext is not valid UTF-8")
 }
 
-pub fn add_entry(master_password: String, data: String, file_path: String) {
-    if !check_file_ext(&file_path) {
-        panic!(
-            "file extension was not correct | file_path received => {}",
-            &file_path
-        )
+pub fn add_entry(master_password: String, data: String, file_path: String) -> Result<(), String> {
+    println!("[add_entry] file_path: {}", file_path);
+    if !file_path.ends_with(".png") {
+        return Err(format!("File must be a .png, got: {}", file_path));
     }
-    let (mut key, master_salt) = authenticate_derive_init(master_password); // write the salt to the file first
-                                                                            // when writing data make sure to zeroize it after
-                                                                            //  save the salt as the second line after the password
-    fs::write("data.bytes", &data).expect("couldn't write data to data.bytes");
 
+    let (mut key, master_salt) = authenticate_derive_init(master_password);
+    println!("[add_entry] key derived, salt generated");
     let (ciphertext, nonce) = encrypt(&key, data);
-
-    // this is where to write data to file to test
-
-    println!("ciphertext len: {}", ciphertext.len());
-
-    println!("ciphertext from encrypt: {:?}", ciphertext);
-    //  encrypt with 256 aes (key derived is 32 bytes aka 32 bytes = 8 bits/byte * 32 bytes = 256 bits)
-
-    // writing the nonce first, so when stego decodes, the nonce will be the first 12 bytes
-    // that were reconstructed
-    stego::encoder(master_salt, nonce, ciphertext, file_path);
+    println!("[add_entry] encrypted, ciphertext len: {}", ciphertext.len());
+    stego::encoder(master_salt, nonce, ciphertext, file_path)?;
     key.zeroize();
+    println!("[add_entry] done");
+    Ok(())
 }
 
-fn read_entry(master_password: String, data: Vec<u8>) -> String {
+fn read_entry(master_password: String, data: Vec<u8>) -> Result<String, String> {
+    println!("[read_entry] raw data len: {}", data.len());
     let salt: &[u8; 16] = &data[0..16]
         .try_into()
-        .expect("couldn't convert salt slice to salt arr");
+        .map_err(|_| "Invalid salt length".to_string())?;
 
     let key = authenticate_derive(master_password, *salt);
+    println!("[read_entry] key derived from salt");
 
     let nonce: GenericArray<u8, <Aes256Gcm as AeadCore>::NonceSize> =
         GenericArray::clone_from_slice(&data[16..28]);
 
-    println!("{}", nonce.len());
-
-    println!("nonce from read_entry: {:?}", nonce);
-
-    // let ciphertext = &data[12..]
-
-    println!("{:?}", &data.len());
-
-    let decrypted_data = decryptt(&key, &nonce, &data[28..].to_vec());
-
-    println!("{}", decrypted_data);
-
-    check_enc_dec_success(&decrypted_data);
-
-    decrypted_data
+    let decrypted = decrypt(&key, &nonce, &data[28..]);
+    println!("[read_entry] decrypted, len: {}", decrypted.len());
+    Ok(decrypted)
 }
 
-pub fn read_entry_handler(master_password: String, file_path: &String) -> String {
-    let data = stego::decoder(file_path);
-
-    return read_entry(master_password, data);
+pub fn read_entry_handler(master_password: String, file_path: &str) -> Result<String, String> {
+    println!("[read_entry_handler] file_path: {}", file_path);
+    let data = stego::decoder(file_path)?;
+    println!("[read_entry_handler] decoded {} bytes from image", data.len());
+    read_entry(master_password, data)
 }
