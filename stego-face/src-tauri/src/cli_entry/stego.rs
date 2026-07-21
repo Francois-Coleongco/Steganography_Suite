@@ -1,197 +1,98 @@
-use aead::{generic_array::GenericArray, AeadCore};
-use aes_gcm::Aes256Gcm;
+use aes_gcm::{
+    aead::{generic_array::GenericArray, AeadCore},
+    Aes256Gcm,
+};
 use image::{save_buffer, ColorType::Rgba8, GenericImageView, ImageBuffer, Rgba};
-use std::iter::Extend;
+
+const LENGTH_HEADER_PIXELS: u32 = 32;
+
+fn set_lsb(pixel: &mut Rgba<u8>, bit: u8) {
+    if bit == 1 {
+        pixel.0[3] |= 0b0000_0001;
+    } else {
+        pixel.0[3] &= 0b1111_1110;
+    }
+}
 
 fn encode_alpha(
     img: ImageBuffer<Rgba<u8>, Vec<u8>>,
     message: &[u8],
-) -> ImageBuffer<Rgba<u8>, Vec<u8>> {
+) -> Result<ImageBuffer<Rgba<u8>, Vec<u8>>, String> {
     let (width, height) = img.dimensions();
-    let bytes = width * height;
+    let total_pixels = width * height;
+    let required_pixels = (message.len() as u32) * 8 + LENGTH_HEADER_PIXELS;
 
-    println!("bytes: {}", bytes);
-
-    if message.len() * 8 > bytes as usize - 8 {
-        // * 8 because a byte is 8 bits and since this is
-        // steganography, i am copying bit by bit to every pixel
-        panic!("Input is too large for image size");
+    if required_pixels > total_pixels {
+        return Err(format!(
+            "Payload too large: need {} pixels, image has {}",
+            required_pixels, total_pixels
+        ));
     }
 
     let mut out = ImageBuffer::<Rgba<u8>, Vec<u8>>::new(width, height);
 
-    let mut bit_values: Vec<u8> = Vec::new();
-
-    for msg_byte in message {
-        for i in 0..8 {
-            let bit_value = (msg_byte >> i) & 1;
-            bit_values.push(bit_value);
-            println!("{}", bit_value); // this prints the bit values in little endian (starting
-                                       // from least significant bit)
-        }
-    }
-
-    println!("every bit: {}", bit_values.len()); // came out to 360 which is 45 chars * 8 bits per
-                                                 // char
-
-    //    we have all the bits now in an array. need to write one to each pixel by doing the // To change the LSB to 1:
-    //  byte |= 0b0000_0001;
-
-    // To change the LSB to 0:
-    //byte &= 0b1111_1110;
-    //
-    //
-    //
-    // let encode_storage_alpha(message.len().try_into().expect("couldn't convert msg len to u32"), img.clone(), width, height);
-    // returns
-
-    for (x, y, pixel) in img.enumerate_pixels() {
-        let mut tmp_pixel = *pixel;
-
-        let input_index = x + (y * width); // counts left to right and from top to down to calculate the total pixels encompassed which corresponds to the number of alpha channels that can be lsb written to
-
-        let input_index_as_usize: usize = input_index
-            .try_into()
-            .expect("unable to calculate input_index_as_usize");
-
-        if input_index < bit_values.len() as u32 {
-            if bit_values[input_index_as_usize] == 1 {
-                tmp_pixel.0[3] |= 0b0000_0001;
-            } else if bit_values[input_index_as_usize] == 0 {
-                tmp_pixel.0[3] &= 0b1111_1110;
-            } else {
-                println!("wtf just happened");
-            }
-
-            println!("ran input_index =>  {}", input_index);
-        }
-        // 4th item (start at 0) this is
-        // writing a byte to a byte space aka the alpha channel for htis pixel is being
-        // replaced with the message. i want to replace a bit only
-        //
-
-        //for msg_byte in msg_bytes
-        //for bit in msg_byte
-        //for byte in image
-        //write bit
-
-        out.put_pixel(x, y, tmp_pixel);
-    }
-
-    let mut x2 = width - 33; // this changes | and is the starting index to write the storage
-                             // section to
-    let y2 = height - 1; // this doesn't change. write contiguously on the same y value.
-
-    // what this looks like => the last row and right corner of image will contain storage length
-    // for message
-
-    let mut size_vec: Vec<u8> = Vec::new();
-
+    // Write length header into the first 32 pixels (MSB-first)
+    let mut length_bits = Vec::with_capacity(32);
     for i in (0..32).rev() {
-        let bit_value = (message.len() >> i) & 1;
-        size_vec.push(
-            bit_value
-                .try_into()
-                .expect("unable to convert storage bit as u8 from u32"),
-        );
-        println!("storage: {}, size_vec size: {}", bit_value, size_vec.len()); // this prints the bit values in little endian (starting
-                                                                               // from least significant bit)
-    } // prints every bit to add
-
-    let mut current_pixel = *(img.get_pixel(x2, y2));
-
-    for bit in size_vec {
-        // get pixel at start x and y | write bit to alpha channel | increment pixel x +=1
-
-        if bit == 1 {
-            current_pixel.0[3] |= 0b0000_0001; // OR the byte against the mask here | if both
-                                               // zero, make 0, else, make 1. this makes the last
-                                               // bit (aka least significant bit) the only one changed
-        } else if bit == 0 {
-            current_pixel.0[3] &= 0b1111_1110; // AND the byte against the mask here | if both
-                                               // zero, gives 0. if both one, give 1. if different, give 0. this leaves it all
-                                               // unchanged unless the last bit (lsb) is 1 in which case it will make it 0
-        } else {
-            println!("wtf just happenedd 2");
-        }
-
-        x2 += 1;
-
-        println!("current_pixel value: {}", current_pixel.0[3]);
-
-        out.put_pixel(x2, y2, current_pixel);
-
-        println!("{}", &out.len());
+        length_bits.push(((message.len() >> i) & 1) as u8);
     }
 
-    out
+    for (i, bit) in length_bits.iter().enumerate() {
+        let x = i as u32;
+        let mut pixel = *img.get_pixel(x, 0);
+        set_lsb(&mut pixel, *bit);
+        out.put_pixel(x, 0, pixel);
+    }
+
+    // Write body starting from pixel 32 (LSB-first per byte)
+    let mut bit_values = Vec::with_capacity(message.len() * 8);
+    for byte in message {
+        for i in 0..8 {
+            bit_values.push((byte >> i) & 1);
+        }
+    }
+
+    for (i, bit) in bit_values.iter().enumerate() {
+        let flat_index = (LENGTH_HEADER_PIXELS as usize) + i;
+        let x = (flat_index as u32) % width;
+        let y = (flat_index as u32) / width;
+        let mut pixel = *img.get_pixel(x, y);
+        set_lsb(&mut pixel, *bit);
+        out.put_pixel(x, y, pixel);
+    }
+
+    Ok(out)
 }
 
-fn decode_alpha(img: ImageBuffer<Rgba<u8>, Vec<u8>>) -> (Vec<u8>, u32) {
-    // this needs to be edited to
-    // read the lsb of each alpha channel byte of a pixel then stick em all together to form a
-    // series of bits
-    let mut out: Vec<u8> = Vec::new();
+fn decode_alpha(img: ImageBuffer<Rgba<u8>, Vec<u8>>) -> Result<(Vec<u8>, u32), String> {
+    let (width, _height) = img.dimensions();
 
-    // read message length first
-
-    let enumerated_pixels: Vec<_> = img.enumerate_pixels().collect();
-
-    let storage_pixels = &enumerated_pixels[enumerated_pixels.len() - 33..];
-
-    let mut storage_size_vec: Vec<u8> = Vec::new();
-
-    for (_x, _y, pixel) in storage_pixels {
-        let bit_value = (pixel.0[3]) & 1; // gets lsb
-
-        storage_size_vec.push(bit_value);
-    }
-
-    println!("storage_size_vec {:?}", storage_size_vec);
-    // let storage_size = ?
-
+    // Read length header from the first 32 pixels
     let mut storage: u32 = 0;
-
-    let mut bit_count = 0;
-
-    for bit in storage_size_vec {
-        println!("bit, {}", bit);
-        let bit: u32 = bit as u32;
+    for i in 0..LENGTH_HEADER_PIXELS {
+        let pixel = img.get_pixel(i, 0);
+        let bit = (pixel.0[3] & 1) as u32;
         storage = bit | (storage << 1);
-        bit_count += 1;
-        if bit_count == 32 {
-            bit_count = 0;
-        }
     }
 
-    let storage_usize: usize = storage
-        .try_into()
-        .expect("couldn't convert storage to usize");
+    let byte_length = storage as usize;
 
-    println!("storage????: {}", storage);
-
-    for (_x, _y, pixel) in &enumerated_pixels[..storage_usize * 8] {
-        // need this to read only pixels up to a certain
-        // limit
-        let bit_value = (pixel.0[3]) & 1; // gets lsb
-        out.push(bit_value);
-        println!("bit {:?}", bit_value);
+    // Read body pixels
+    let mut bits = Vec::with_capacity(byte_length * 8);
+    for i in 0..byte_length * 8 {
+        let flat_index = LENGTH_HEADER_PIXELS as usize + i;
+        let x = (flat_index as u32) % width;
+        let y = (flat_index as u32) / width;
+        let pixel = img.get_pixel(x, y);
+        bits.push(pixel.0[3] & 1);
     }
 
-    let out_len = out.len();
-
-    println!("out len: {}", out_len);
-    // out is an array of 0's and 1's. i need to convert this array back to bytes
-
-    //  EVERY BYTE MUST BE FLIPPED SO IT GIVES A RIGHT NUMBER FOR ASCII
-
-    let mut final_bytes: Vec<u8> = Vec::new();
-
+    // Reconstruct bytes from bits (little-endian per byte)
+    let mut final_bytes = Vec::with_capacity(byte_length);
     let mut current_byte: u8 = 0;
-
     let mut bit_count = 0;
 
-    for bit in &out {
+    for bit in bits {
         current_byte = bit | (current_byte << 1);
         bit_count += 1;
         if bit_count == 8 {
@@ -201,7 +102,7 @@ fn decode_alpha(img: ImageBuffer<Rgba<u8>, Vec<u8>>) -> (Vec<u8>, u32) {
         }
     }
 
-    (final_bytes, storage)
+    Ok((final_bytes, storage))
 }
 
 pub fn encoder(
@@ -209,53 +110,40 @@ pub fn encoder(
     nonce: GenericArray<u8, <Aes256Gcm as AeadCore>::NonceSize>,
     ciphertext: Vec<u8>,
     mut file_path: String,
-) {
-    println!("entered encoder");
-    let image = image::open(&file_path).expect("error opening");
-
-    let img_as_rgba: ImageBuffer<Rgba<u8>, Vec<u8>> = image.to_rgba8();
-
+) -> Result<(), String> {
+    println!("[stego::encoder] opening image: {}", file_path);
+    let image = image::open(&file_path).map_err(|e| format!("Failed to open image: {}", e))?;
+    let img_rgba = image.to_rgba8();
     let (width, height) = image.dimensions();
+    println!("[stego::encoder] image dimensions: {}x{}", width, height);
 
     let mut payload = master_salt.to_vec();
-
     payload.extend(nonce);
-
     payload.extend(&ciphertext);
+    println!("[stego::encoder] payload len: {} bytes (salt 16 + nonce 12 + ciphertext {})", payload.len(), ciphertext.len());
 
-    if payload.len()
-        > (width * height)
-            .try_into()
-            .expect("couldn't convert to usize")
-    {
-        println!("too small image to embed with alpha channel encoding");
-    }
-
-    let new_image_buffer = encode_alpha(img_as_rgba, &payload);
+    let new_image_buffer = encode_alpha(img_rgba, &payload)?;
 
     if let Some(pos) = file_path.rfind(".") {
         file_path.insert_str(pos, " (sneaky)");
     } else {
-        panic!("WHAT HTE FUCIKK")
+        return Err("File has no extension".to_string());
     }
 
-    println!("{}", file_path);
+    println!("[stego::encoder] saving to: {}", file_path);
+    save_buffer(&file_path, &new_image_buffer, width, height, Rgba8)
+        .map_err(|e| format!("Failed to save image: {}", e))?;
 
-    save_buffer(file_path, &new_image_buffer, width, height, Rgba8)
-        .expect("failed to message-copy");
+    println!("[stego::encoder] done");
+    Ok(())
 }
 
-pub fn decoder(file_path: &String) -> Vec<u8> {
-    let filepath = file_path;
+pub fn decoder(file_path: &str) -> Result<Vec<u8>, String> {
+    println!("[stego::decoder] opening image: {}", file_path);
+    let image = image::open(file_path).map_err(|e| format!("Failed to open image: {}", e))?;
+    let img_rgba = image.to_rgba8();
 
-    let image = image::open(filepath).expect("error opening");
-
-    let img_as_rgba: ImageBuffer<Rgba<u8>, Vec<u8>> = image.to_rgba8();
-
-    let (data, length) = decode_alpha(img_as_rgba);
-
-    println!("bytes found: {}\n\n\n", length); // it did get in. this is whats being pritned. it says the number of bytes aka the number of chars in the message written
-                                               //
-    println!("bytes contents: {:?}", data);
-    data
+    let (data, length) = decode_alpha(img_rgba)?;
+    println!("[stego::decoder] decoded {} bytes from {} pixel bits", data.len(), length * 8);
+    Ok(data)
 }

@@ -1,1 +1,7 @@
-/target
+**/target/
+node_modules/
+data.bytes
+out.bytes
+*.mp4
+*.mkv
+*.mp3
