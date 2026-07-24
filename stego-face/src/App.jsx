@@ -17,6 +17,8 @@ function App() {
   const [feedback, setFeedback] = useState(null);
   const [copied, setCopied] = useState(false);
 
+  const [sidePanel, setSidePanel] = useState({ open: false, title: "", content: "" });
+
   function extractFileName(path) {
     if (!path) return "";
     return path.split(/[/\\]/).pop();
@@ -42,13 +44,21 @@ function App() {
     e.preventDefault();
     setLoading(true);
     setFeedback(null);
+    setSidePanel({ open: false, title: "", content: "" });
     try {
-      await invoke("invoke_add_entry", {
+      const stegoPath = await invoke("invoke_add_entry", {
         masterPassword: masterPasswordAdd,
         data: dataAdd,
         filePath: filePathAdd,
       });
       setFeedback({ type: "success", text: "Encoded." });
+      try {
+        const diff = await invoke("invoke_hex_diff", {
+          originalPath: filePathAdd,
+          stegoPath: stegoPath,
+        });
+        setSidePanel({ open: true, title: "hex diff", content: diff });
+      } catch (_) {}
     } catch (err) {
       setFeedback({ type: "error", text: String(err) });
     } finally {
@@ -61,6 +71,7 @@ function App() {
     setLoading(true);
     setFeedback(null);
     setSecretData("");
+    setSidePanel({ open: false, title: "", content: "" });
     try {
       const data = await invoke("invoke_read_entry", {
         masterPassword: masterPasswordRead,
@@ -68,6 +79,12 @@ function App() {
       });
       setSecretData(data);
       setFeedback({ type: "success", text: "Decoded." });
+      try {
+        const dump = await invoke("invoke_hex_dump", {
+          filePath: filePathRead,
+        });
+        setSidePanel({ open: true, title: "hex dump", content: dump });
+      } catch (_) {}
     } catch (err) {
       setFeedback({ type: "error", text: String(err) });
     } finally {
@@ -96,7 +113,7 @@ function App() {
   const decryptPreview = imagePreviewSrc(filePathRead);
 
   return (
-    <div className="container">
+    <div className={`container${sidePanel.open ? " with-panel" : ""}`}>
       <div className="header">
         <h1>
           stego<span>suite</span>
@@ -163,9 +180,12 @@ function App() {
               </div>
             )}
 
-            <button type="submit" className="btn-primary" disabled={loading}>
-              {loading ? <><span className="spinner" /> encoding...</> : "encode"}
-            </button>
+            <div className="btn-wrapper">
+              <button type="submit" className="btn-primary" disabled={loading}>
+                {loading ? "encoding..." : "encode"}
+              </button>
+              {loading && <div className="progress-bar"><div className="progress-bar-fill" /></div>}
+            </div>
           </form>
 
           {feedback && (
@@ -208,9 +228,12 @@ function App() {
               </div>
             )}
 
-            <button type="submit" className="btn-primary" disabled={loading}>
-              {loading ? <><span className="spinner" /> decoding...</> : "decode"}
-            </button>
+            <div className="btn-wrapper">
+              <button type="submit" className="btn-primary" disabled={loading}>
+                {loading ? "decoding..." : "decode"}
+              </button>
+              {loading && <div className="progress-bar"><div className="progress-bar-fill" /></div>}
+            </div>
           </form>
 
           {feedback && (
@@ -228,6 +251,20 @@ function App() {
               </button>
             </div>
           )}
+        </div>
+      )}
+
+      {sidePanel.open && (
+        <div className="side-overlay" onClick={() => setSidePanel({ open: false, title: "", content: "" })}>
+          <div className="side-panel" onClick={(e) => e.stopPropagation()}>
+            <div className="side-panel-header">
+              <span className="side-panel-title">{sidePanel.title}</span>
+              <button className="side-panel-close" onClick={() => setSidePanel({ open: false, title: "", content: "" })}>×</button>
+            </div>
+            <div className="side-panel-content">
+              <pre>{sidePanel.content}</pre>
+            </div>
+          </div>
         </div>
       )}
     </div>
