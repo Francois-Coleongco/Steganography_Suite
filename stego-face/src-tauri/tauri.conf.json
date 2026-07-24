@@ -1,8 +1,8 @@
 {
     "$schema": "https://schema.tauri.app/config/2.0.0",
-    "productName": "stego-face",
+    "productName": "stegosuite",
     "version": "0.1.0",
-    "identifier": "com.stego-face.app",
+    "identifier": "com.stegosuite.app",
     "build": {
         "beforeDevCommand": "npm run dev",
         "devUrl": "http://localhost:1420",
@@ -12,13 +12,17 @@
     "app": {
         "windows": [
             {
-                "title": "stego-face",
+                "title": "stegosuite",
                 "width": 800,
                 "height": 600
             }
         ],
         "security": {
-            "csp": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'"
+            "csp": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' asset: https://asset.localhost",
+            "assetProtocol": {
+                "enable": true,
+                "scope": ["**"]
+            }
         }
     },
     "bundle": {
