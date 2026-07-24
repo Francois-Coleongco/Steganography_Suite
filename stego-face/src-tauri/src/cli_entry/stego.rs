@@ -29,7 +29,7 @@ fn encode_alpha(
         ));
     }
 
-    let mut out = ImageBuffer::<Rgba<u8>, Vec<u8>>::new(width, height);
+    let mut out = img;
 
     // Write length header into the first 32 pixels (MSB-first)
     let mut length_bits = Vec::with_capacity(32);
@@ -39,7 +39,7 @@ fn encode_alpha(
 
     for (i, bit) in length_bits.iter().enumerate() {
         let x = i as u32;
-        let mut pixel = *img.get_pixel(x, 0);
+        let mut pixel = *out.get_pixel(x, 0);
         set_lsb(&mut pixel, *bit);
         out.put_pixel(x, 0, pixel);
     }
@@ -56,7 +56,7 @@ fn encode_alpha(
         let flat_index = (LENGTH_HEADER_PIXELS as usize) + i;
         let x = (flat_index as u32) % width;
         let y = (flat_index as u32) / width;
-        let mut pixel = *img.get_pixel(x, y);
+        let mut pixel = *out.get_pixel(x, y);
         set_lsb(&mut pixel, *bit);
         out.put_pixel(x, y, pixel);
     }

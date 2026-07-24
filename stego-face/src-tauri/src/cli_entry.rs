@@ -62,7 +62,7 @@ fn decrypt(
     String::from_utf8(plaintext).expect("plaintext is not valid UTF-8")
 }
 
-pub fn add_entry(master_password: String, data: String, file_path: String) -> Result<(), String> {
+pub fn add_entry(master_password: String, data: String, file_path: String) -> Result<String, String> {
     println!("[add_entry] file_path: {}", file_path);
     if !file_path.ends_with(".png") {
         return Err(format!("File must be a .png, got: {}", file_path));
@@ -72,10 +72,15 @@ pub fn add_entry(master_password: String, data: String, file_path: String) -> Re
     println!("[add_entry] key derived, salt generated");
     let (ciphertext, nonce) = encrypt(&key, data);
     println!("[add_entry] encrypted, ciphertext len: {}", ciphertext.len());
-    stego::encoder(master_salt, nonce, ciphertext, file_path)?;
+    stego::encoder(master_salt, nonce, ciphertext, file_path.clone())?;
     key.zeroize();
-    println!("[add_entry] done");
-    Ok(())
+
+    let mut stego_path = file_path;
+    if let Some(pos) = stego_path.rfind(".") {
+        stego_path.insert_str(pos, ".stego");
+    }
+    println!("[add_entry] done, stego_path: {}", stego_path);
+    Ok(stego_path)
 }
 
 fn read_entry(master_password: String, data: Vec<u8>) -> Result<String, String> {
