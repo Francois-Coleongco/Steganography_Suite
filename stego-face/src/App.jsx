@@ -259,7 +259,7 @@ function App() {
           <div className="side-panel" onClick={(e) => e.stopPropagation()}>
             <div className="side-panel-header">
               <span className="side-panel-title">{sidePanel.title}</span>
-              <button className="side-panel-close" onClick={() => setSidePanel({ open: false, title: "", content: "" })}>×</button>
+              <button className="side-panel-close" onClick={() => setSidePanel({ open: false, title: "", content: "" })}>x</button>
             </div>
             <div className="side-panel-content">
               <pre>{sidePanel.content}</pre>
