@@ -125,7 +125,7 @@ pub fn encoder(
     let new_image_buffer = encode_alpha(img_rgba, &payload)?;
 
     if let Some(pos) = file_path.rfind(".") {
-        file_path.insert_str(pos, " (sneaky)");
+        file_path.insert_str(pos, ".stego");
     } else {
         return Err("File has no extension".to_string());
     }

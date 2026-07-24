@@ -48,7 +48,7 @@ function App() {
         data: dataAdd,
         filePath: filePathAdd,
       });
-      setFeedback({ type: "success", text: "Message encoded successfully." });
+      setFeedback({ type: "success", text: "Encoded." });
     } catch (err) {
       setFeedback({ type: "error", text: String(err) });
     } finally {
@@ -67,7 +67,7 @@ function App() {
         filePath: filePathRead,
       });
       setSecretData(data);
-      setFeedback({ type: "success", text: "Message decoded successfully." });
+      setFeedback({ type: "success", text: "Decoded." });
     } catch (err) {
       setFeedback({ type: "error", text: String(err) });
     } finally {
@@ -98,8 +98,10 @@ function App() {
   return (
     <div className="container">
       <div className="header">
-        <h1>Steganography Suite</h1>
-        <span className="subtitle">Encode and decode hidden messages in PNG images</span>
+        <h1>
+          stego<span>suite</span>
+        </h1>
+        <span className="subtitle">hide messages in png images</span>
       </div>
 
       <div className="mode-toggle">
@@ -107,122 +109,122 @@ function App() {
           className={mode === "encrypt" ? "active" : ""}
           onClick={() => { setMode("encrypt"); setFeedback(null); }}
         >
-          Encrypt
+          encrypt
         </button>
         <button
           className={mode === "decrypt" ? "active" : ""}
           onClick={() => { setMode("decrypt"); setFeedback(null); }}
         >
-          Decrypt
+          decrypt
         </button>
       </div>
 
       {mode === "encrypt" ? (
         <div className="card">
-          <h2>Encrypt a message</h2>
+          <h2>new entry</h2>
           <form className="form-group" onSubmit={handleEncrypt}>
             <label>
-              <span>Master Password</span>
+              <span>password</span>
               <input
                 type="password"
-                placeholder="Enter a master password"
+                placeholder="master password"
                 value={masterPasswordAdd}
                 onChange={(e) => setMasterPasswordAdd(e.target.value)}
               />
             </label>
 
             <label>
-              <span>Secret Message</span>
+              <span>message</span>
               <input
                 type="text"
-                placeholder="Enter the message to hide"
+                placeholder="text to hide"
                 value={dataAdd}
                 onChange={(e) => setDataAdd(e.target.value)}
               />
             </label>
 
             <label>
-              <span>PNG Image</span>
+              <span>image</span>
               <button
                 type="button"
                 className={`file-picker${filePathAdd ? " has-file" : ""}`}
                 onClick={() => pickFile(setFilePathAdd)}
               >
-                <span className="file-icon">📷</span>
+                <span className="file-icon">PNG</span>
                 <span className="file-name">
-                  {filePathAdd ? extractFileName(filePathAdd) : "Select a PNG image"}
+                  {filePathAdd ? extractFileName(filePathAdd) : "select a png file"}
                 </span>
               </button>
             </label>
 
             {encryptPreview && (
               <div className="image-preview">
-                <img src={encryptPreview} alt="Selected PNG preview" />
+                <img src={encryptPreview} alt="Preview" />
               </div>
             )}
 
             <button type="submit" className="btn-primary" disabled={loading}>
-              {loading ? <><span className="spinner" /> Encoding...</> : "Encode Message"}
+              {loading ? <><span className="spinner" /> encoding...</> : "encode"}
             </button>
           </form>
 
           {feedback && (
             <div className={`feedback ${feedback.type}`}>
-              {feedback.type === "success" ? "\u2713" : "\u2715"} {feedback.text}
+              {feedback.type === "success" ? "+" : "!"} {feedback.text}
             </div>
           )}
         </div>
       ) : (
         <div className="card">
-          <h2>Decrypt a message</h2>
+          <h2>read entry</h2>
           <form className="form-group" onSubmit={handleDecrypt}>
             <label>
-              <span>Master Password</span>
+              <span>password</span>
               <input
                 type="password"
-                placeholder="Enter the master password"
+                placeholder="master password"
                 value={masterPasswordRead}
                 onChange={(e) => setMasterPasswordRead(e.target.value)}
               />
             </label>
 
             <label>
-              <span>PNG Image</span>
+              <span>image</span>
               <button
                 type="button"
                 className={`file-picker${filePathRead ? " has-file" : ""}`}
                 onClick={() => pickFile(setFilePathRead)}
               >
-                <span className="file-icon">📷</span>
+                <span className="file-icon">PNG</span>
                 <span className="file-name">
-                  {filePathRead ? extractFileName(filePathRead) : "Select a PNG image"}
+                  {filePathRead ? extractFileName(filePathRead) : "select a png file"}
                 </span>
               </button>
             </label>
 
             {decryptPreview && (
               <div className="image-preview">
-                <img src={decryptPreview} alt="Selected PNG preview" />
+                <img src={decryptPreview} alt="Preview" />
               </div>
             )}
 
             <button type="submit" className="btn-primary" disabled={loading}>
-              {loading ? <><span className="spinner" /> Decoding...</> : "Decode Message"}
+              {loading ? <><span className="spinner" /> decoding...</> : "decode"}
             </button>
           </form>
 
           {feedback && (
             <div className={`feedback ${feedback.type}`}>
-              {feedback.type === "success" ? "\u2713" : "\u2715"} {feedback.text}
+              {feedback.type === "success" ? "+" : "!"} {feedback.text}
             </div>
           )}
 
           {secretData && (
             <div className="result">
-              <div className="result-label">Decoded message</div>
+              <div className="result-label">decoded</div>
               <div className="result-content">{secretData}</div>
               <button className="copy-btn" onClick={copyResult}>
-                {copied ? "Copied!" : "Copy"}
+                {copied ? "ok" : "copy"}
               </button>
             </div>
           )}
