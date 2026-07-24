@@ -1,0 +1,11 @@
+# Tell GitHub Linguist to ignore frontend files for language stats
+*.css linguist-detectable=false
+*.js linguist-detectable=false
+*.jsx linguist-detectable=false
+*.html linguist-detectable=false
+*.svg linguist-detectable=false
+*.json linguist-detectable=false
+*.lock linguist-generated=true
+dist/** linguist-generated=true
+stego-face/src-tauri/icons/** linguist-generated=true
+ci-build/** linguist-vendored=true
