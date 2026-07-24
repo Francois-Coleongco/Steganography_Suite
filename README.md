@@ -6,8 +6,13 @@ Unlike most stego tools, this one adds an extra layer of **AES-GCM 256-bit encry
 
 ## Demo:
 
-https://github.com/user-attachments/assets/bac77eb6-2e48-4072-818a-d487007e1ad2
 
+
+https://github.com/user-attachments/assets/a5b953b8-bed2-48bf-808d-51e2194cbadb
+
+
+
+https://github.com/user-attachments/assets/9e6996c0-87fc-4579-b80e-96fa70afecc3
 
 
 
@@ -53,25 +58,25 @@ With this, you can have a **password manager that hides your passwords in a PNG*
 
 When you encode a message, the new image will be saved in the **same directory as the original** but renamed to:
 
-<original_filename> (sneaky).<extension>
+<original_filename>.stego.png
 
 
 Example:  
-`passwords.png` → `passwords (sneaky).png`
+`passwords.png` → `passwords.stego.png`
 
 ---
 
 ## How It Works
 
 
-### Step 1 – Encryption
+### Step 1: Encryption
 
 Before encoding, the message is **encrypted using AES-256-GCM**, provided by the [Rust `aes-gcm`](https://docs.rs/aes-gcm/latest/aes_gcm/) crate.
 
 - Encryption/decryption is done locally via PBKDF2 password to symmetric key derivation.
 
 
-### Step 2 - Encoding
+### Step 2: Encoding
 
 - Read the given message with bit-masking.
 - Stores each bit into the **LSB of the alpha channel** (opacity byte) of each pixel.
@@ -79,7 +84,7 @@ Before encoding, the message is **encrypted using AES-256-GCM**, provided by the
 (looking back this was a weird implementation, size should be first ideally)
 
 
-### Step 3 – GUI (in `stego-face/`)
+### Step 3: GUI (in `stego-face/`)
 
 The GUI wraps the encoding/decoding flow into a friendly frontend using:
 
